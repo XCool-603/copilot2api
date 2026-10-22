@@ -2,7 +2,7 @@ package web
 
 import (
 	"context"
-	"m365-copilot2api/internal/outbound"
+	"copilot2api/internal/outbound"
 	"net/http"
 	"net/http/httptest"
 	"os"

@@ -3,7 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 	"strings"
 
 	"github.com/google/uuid"

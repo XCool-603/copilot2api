@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 func answerRequestTestBody() oaiReq {

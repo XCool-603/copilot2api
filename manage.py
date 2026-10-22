@@ -8,7 +8,7 @@ import signal
 
 # 基于脚本自身位置推导，克隆到任意目录都可直接用，无需改硬编码路径。
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVER_EXE = os.path.join(BASE_DIR, "m365-copilot2api.exe")
+SERVER_EXE = os.path.join(BASE_DIR, "copilot2api.exe")
 SERVER_DIR = BASE_DIR
 LOG_FILE = os.path.join(BASE_DIR, "server.log")
 ERR_FILE = os.path.join(BASE_DIR, "server-error.log")

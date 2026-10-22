@@ -26,7 +26,10 @@ export function DashboardPage({ push, nav }: { push: Push; nav: (id: "accounts" 
       setAll(a?.stats?.summary ?? {});
       setLogs(l?.logs ?? []);
     } catch (e: any) {
-      push(String(e?.message ?? e), "error");
+      const msg = String(e?.message ?? e);
+      if (!msg.includes("password_change_required") && !msg.includes("administrator password must be changed")) {
+        push(msg, "error");
+      }
     } finally {
       setLoading(false);
     }

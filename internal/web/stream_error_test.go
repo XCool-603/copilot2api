@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 // Streaming starts with HTTP 200, so a mid-stream failure is only visible as an

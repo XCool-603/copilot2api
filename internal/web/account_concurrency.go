@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 const defaultAccountConcurrency = 8

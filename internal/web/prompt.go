@@ -2,7 +2,7 @@ package web
 
 import (
 	"fmt"
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 	"strings"
 )
 

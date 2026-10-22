@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 // streamErrorCode maps an upstream failure to the OpenAI-compatible error code

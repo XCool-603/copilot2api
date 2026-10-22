@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 // A caller cannot decide whether to retry if every upstream failure looks the

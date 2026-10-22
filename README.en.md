@@ -2,10 +2,10 @@
   <strong>English</strong> | <a href="./README.md">简体中文</a>
 </p>
 
-# M365 Copilot2API
+# copilot2api
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/HEXUXIU/M365-Copilot2API" alt="License">
+  <img src="https://img.shields.io/github/license/XCool-603/copilot2api" alt="License">
   <img src="https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go" alt="Go Version">
   <img src="https://img.shields.io/badge/API-OpenAI%20Compatible-412991?logo=openai" alt="OpenAI Compatible">
   <img src="https://img.shields.io/badge/API-Anthropic%20Compatible-FF6B6B?logo=anthropic" alt="Anthropic Compatible">
@@ -76,7 +76,7 @@ The project ships with a complete web admin console covering account authorizati
 ```
 ┌──────────────┐   OpenAI / Anthropic    ┌─────────────────────────┐    ChatHub    ┌──────────────┐
 │ Claude Code  │ ──────────────────────► │         Gateway          │ ────────────► │ M365 Copilot │
-│ OpenCode     │  /v1/chat/completions    │ (Go, m365-copilot2api)  │   WebSocket   │(cloud convo) │
+│ OpenCode     │  /v1/chat/completions    │ (Go, copilot2api)  │   WebSocket   │(cloud convo) │
 │ Any OpenAI   │  /v1/messages            │  internal/web           │  internal/    │              │
 │ client       │  /v1/responses           │                         │  chathub      │              │
 └──────────────┘                          └─────────────────────────┘               └──────────────┘
@@ -95,41 +95,41 @@ The project ships with a complete web admin console covering account authorizati
 
 ### Precompiled binaries (recommended)
 
-Download the binary for your platform from [GitHub Releases](https://github.com/HEXUXIU/M365-Copilot2API/releases):
+Download the binary for your platform from [GitHub Releases](https://github.com/XCool-603/copilot2api/releases):
 
 | Platform | Architecture | File |
 |------|------|------|
-| Linux | x86_64 / arm64 / i386 | `m365-copilot2api-linux-{amd64,arm64,386}` |
-| Windows | x86_64 / arm64 / i386 | `m365-copilot2api-windows-{amd64,arm64,386}.exe` |
-| macOS | x86_64 / arm64 | `m365-copilot2api-darwin-{amd64,arm64}` |
+| Linux | x86_64 / arm64 / i386 | `copilot2api-linux-{amd64,arm64,386}` |
+| Windows | x86_64 / arm64 / i386 | `copilot2api-windows-{amd64,arm64,386}.exe` |
+| macOS | x86_64 / arm64 | `copilot2api-darwin-{amd64,arm64}` |
 
 ```bash
 # Linux / macOS example
-chmod +x m365-copilot2api-linux-amd64
-./m365-copilot2api-linux-amd64
+chmod +x copilot2api-linux-amd64
+./copilot2api-linux-amd64
 ```
 
 ```powershell
 # Windows example
-.\m365-copilot2api-windows-amd64.exe
+.\copilot2api-windows-amd64.exe
 ```
 
 ### Build from source
 
 ```powershell
-git clone https://github.com/HEXUXIU/M365-Copilot2API.git
+git clone https://github.com/XCool-603/copilot2api.git
 cd M365-Copilot2API
 
 # Set the admin password (optional, defaults to admin123); always set a strong password in production
 $env:M365_ADMIN_PASSWORD = "your_strong_password"
 
-go build -o m365-copilot2api.exe ./cmd/server
+go build -o copilot2api.exe ./cmd/server
 ```
 
 ```bash
 # Linux / macOS
 export M365_ADMIN_PASSWORD=your_strong_password
-go build -o m365-copilot2api ./cmd/server
+go build -o copilot2api ./cmd/server
 ```
 
 ### Startup
@@ -144,7 +144,7 @@ python manage.py err      # view error logs
 python manage.py stop     # stop the service
 ```
 
-> `manage.py` hardcodes an absolute repo path internally (e.g. `D:\M365-Copilot2API\m365-copilot2api.exe`); if you clone into a different directory, edit the path constants at the top of the script first, and make sure you've built the binary already.
+> `manage.py` hardcodes an absolute repo path internally (e.g. `D:\M365-Copilot2API\copilot2api.exe`); if you clone into a different directory, edit the path constants at the top of the script first, and make sure you've built the binary already.
 
 Running the binary directly listens only on the internal network at `http://127.0.0.1:4141` by default; override it with the `M365_LISTEN` environment variable.
 
@@ -179,8 +179,8 @@ Everything is configured via environment variables; you can use `.env.example` a
 |------|--------|------|
 | `M365_LISTEN` | `127.0.0.1:4141` | Listen address (`manage.py` and Docker default to `0.0.0.0:4141`) |
 | `M365_ADMIN_PASSWORD` | `admin123` | Admin password (must be changed on first login) |
-| `M365_DATA_DIR` | `~/.config/m365-copilot2api` | Data directory (centralized storage for tokens, keys, usage, etc.; `manage.py` defaults to `data/`) |
-| `M365_CONFIG` | `~/.config/m365-copilot2api/accounts.json` | Path to the account configuration file |
+| `M365_DATA_DIR` | `~/.config/copilot2api` | Data directory (centralized storage for tokens, keys, usage, etc.; `manage.py` defaults to `data/`) |
+| `M365_CONFIG` | `~/.config/copilot2api/accounts.json` | Path to the account configuration file |
 | `M365_SESSION_TTL_MINUTES` | `120` | Session-binding lifetime (minutes); cleared from `sessions.json` on expiry |
 | `M365_CONTEXT_TTL_MINUTES` | `120` | Context-fingerprint reuse window (minutes) |
 | `M365_CONTEXT_SIMILARITY` | `0.6` | Context-similarity reuse threshold (0-1, Jaccard similarity) |

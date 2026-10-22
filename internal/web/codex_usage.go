@@ -9,7 +9,7 @@ import (
 
 	tiktoken "github.com/tiktoken-go/tokenizer"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 const (

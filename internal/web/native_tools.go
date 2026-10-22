@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 // nativeToolCalls converts only tool invocations actually present in ChatHub

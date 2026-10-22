@@ -1,7 +1,7 @@
 package web
 
 import (
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 	"net/http"
 	"time"
 	"unicode/utf8"

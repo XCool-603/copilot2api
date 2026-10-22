@@ -3,7 +3,7 @@ package web
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 	"sync"
 	"time"
 )

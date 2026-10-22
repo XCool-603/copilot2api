@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/chathub"
 )
 
 type atomKind string

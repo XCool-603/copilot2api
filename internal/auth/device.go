@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"m365-copilot2api/internal/outbound"
+	"copilot2api/internal/outbound"
 	"net/http"
 	"net/url"
 	"strings"

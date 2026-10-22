@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"m365-copilot2api/internal/outbound"
+	"copilot2api/internal/outbound"
 )
 
 type modelMapping struct {

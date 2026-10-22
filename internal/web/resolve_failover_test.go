@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"m365-copilot2api/internal/auth"
+	"copilot2api/internal/auth"
 )
 
 // A preferred account whose token can no longer be validated (expired with no

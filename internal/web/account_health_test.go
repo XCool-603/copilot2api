@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"m365-copilot2api/internal/auth"
-	"m365-copilot2api/internal/chathub"
+	"copilot2api/internal/auth"
+	"copilot2api/internal/chathub"
 )
 
 func TestUpstreamErrorClassification(t *testing.T) {

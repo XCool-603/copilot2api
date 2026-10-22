@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"m365-copilot2api/internal/auth"
+	"copilot2api/internal/auth"
 )
 
 func TestStartPKCEUsesBrowserClientDefaults(t *testing.T) {

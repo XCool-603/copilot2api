@@ -1,4 +1,4 @@
-module m365-copilot2api
+module copilot2api
 
 go 1.23
 
