@@ -1,12 +1,12 @@
 /* App-level overrides on top of the extracted legacy stylesheet. */
 
-/* Login submit: black (primary) when usable, muted when empty — matches the
-   legacy login page. Autofill is detected so the button enables without a click. */
+/* Login submit: Indigo-Purple gradient matching WorkBuddy2API */
 .login-submit {
   width: 100%;
-  border: 0;
-  background: var(--primary);
-  color: var(--bg);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #a855f7 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
   padding: 10px 16px;
   font-weight: 600;
   font-size: 15px;
@@ -16,14 +16,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 140ms ease-out, opacity 140ms ease-out,
-    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .login-submit:hover {
-  background: var(--primary-hover);
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #c084fc 100%) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
+  transform: translateY(-1px);
 }
 .login-submit:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 .login-submit:disabled {
   opacity: 0.5;
@@ -39,7 +40,7 @@ input:-webkit-autofill {
   animation-duration: 0.001s;
 }
 
-/* The sidebar is pinned to the viewport and never scrolls with the content. */
+/* Pinned layout */
 .app {
   display: flex;
   align-items: stretch;
@@ -59,9 +60,7 @@ input:-webkit-autofill {
   min-width: 0;
 }
 
-/* Tables fill their container instead of forcing a fixed minimum width. The
-   legacy rule is `.table-wrap .table{min-width:640px}` (specificity 0,2,0), so
-   this override must match that specificity to win. */
+/* Tables */
 .table-wrap .table {
   min-width: 0;
   width: 100%;
@@ -72,8 +71,7 @@ input:-webkit-autofill {
   overflow-wrap: anywhere;
 }
 
-/* The markup uses `.status .dot`, but legacy CSS only styles `.status i`, so
-   status dots never rendered. Style the class that is actually used. */
+/* Status dots */
 .status .dot {
   width: 6px;
   height: 6px;
@@ -82,31 +80,19 @@ input:-webkit-autofill {
   display: inline-block;
 }
 
-/* Logo: the mark stays visible when the sidebar collapses; only the wordmark
-   is hidden. */
-.logo .logo-mark {
-  display: grid;
-}
-.logo .logo-text {
-  display: inline;
-}
-/* Kept in CSS (not inline) so the narrow-screen rule below can hide it. */
+/* Topbar */
 .topbar-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 @media (max-width: 640px) {
-  /* Legacy hides every `.logo span`, which also kills the four mark blocks;
-     restore them so the collapsed sidebar still shows the logo. */
   .logo .logo-mark span {
     display: block;
   }
   .logo .logo-text {
     display: none;
   }
-  /* Legacy hides the whole topbar-right on narrow screens. Keep it so the log
-     out button stays reachable on phones; only drop the status and locale. */
   .topbar-right {
     display: flex;
   }
@@ -124,37 +110,14 @@ input:-webkit-autofill {
   }
 }
 
-/* Press feedback: instant, on pointer-down. */
-.btn,
-.quick-action,
-.modal-close,
-.seg button {
-  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    background 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out;
-}
-.btn:active,
-.quick-action:active {
-  transform: scale(0.97);
-}
-.nav button {
-  transition: background 140ms ease-out, color 140ms ease-out,
-    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.nav button:active {
-  transform: scale(0.98);
-}
-
-/* The legacy `.modal{animation:scaleIn}` fights Motion's transform on the same
-   element; Motion owns the entrance, so drop the CSS keyframe. The extracted
-   legacy rule also lost the old inline max-height/overflow, which clipped tall
-   dialogs on short viewports. */
+/* Modal */
 .modal {
   animation: none;
   max-height: calc(100vh - 48px);
   overflow: auto;
 }
 
-/* Keep entry animations within the UI budget (<300ms). */
+/* Entry animations */
 .app,
 .stat,
 .usage-overview-item,
@@ -164,15 +127,11 @@ input:-webkit-autofill {
   animation-duration: 240ms;
 }
 
-/* The slideUp keyframe uses fill-mode `both`, which pins transform and kills
-   the hover lift; the animation outranks a plain author declaration, so it has
-   to be cancelled for the hover state to take effect. */
 .stat:hover {
   animation: none;
   transform: translateY(-3px);
 }
 
-/* Hover motion only on devices with a real pointer. */
 @media (hover: none) {
   .stat:hover,
   .card:hover,
@@ -182,15 +141,10 @@ input:-webkit-autofill {
   }
 }
 
-/* Reduced motion: keep opacity/colour, drop transform-based movement. */
-/* Legacy references an undefined `--hover`, so the close button had no hover
-   feedback. Use the theme-aware line tint instead. */
 .modal-close:hover {
   background: var(--line);
 }
 
-/* Quick actions are real buttons now, so reset the UA button chrome and keep the
-   legacy card layout. */
 .quick-action {
   appearance: none;
   width: 100%;
@@ -218,4 +172,211 @@ input:-webkit-autofill {
   .quick-action:active {
     transform: none !important;
   }
+}
+
+/* ==========================================================================
+   WorkBuddy 2API Theme Overrides (Cyberpunk Glassmorphism & Neon Glow)
+   ========================================================================== */
+
+/* 1. Global Background */
+body {
+  background-color: #030712 !important;
+  background-image: 
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(14, 165, 233, 0.08) 0px, transparent 50%) !important;
+  background-attachment: fixed !important;
+  color: #f1f5f9 !important;
+}
+
+/* 2. Glassmorphism Sidebar */
+.sidebar {
+  background: rgba(11, 17, 32, 0.8) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.logo {
+  color: #fff !important;
+}
+.logo-mark {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.45);
+}
+.nav-label {
+  color: #64748b !important;
+  letter-spacing: 0.08em;
+}
+.nav button {
+  color: #94a3b8 !important;
+  border-radius: 10px !important;
+  font-weight: 500 !important;
+}
+.nav button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #f8fafc !important;
+}
+.nav button.active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.12) 100%) !important;
+  color: #818cf8 !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #6366f1 !important;
+}
+.nav button.active::before {
+  display: none !important;
+}
+.sidebar-foot {
+  color: #64748b !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 3. Glassmorphism Topbar */
+.topbar {
+  background: rgba(11, 17, 32, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.topbar h1 {
+  color: #fff !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+}
+.status-dot {
+  background: #10b981 !important;
+  box-shadow: 0 0 10px #10b981 !important;
+}
+
+/* 4. Stat Cards (Metrics) */
+.stat {
+  background: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3) !important;
+}
+.stat:hover {
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.3) !important;
+}
+.stat-label {
+  color: #94a3b8 !important;
+}
+.stat-value {
+  color: #fff !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* 5. Content Cards & Panels */
+.card {
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+}
+.card-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(30, 41, 59, 0.35) !important;
+}
+.card-title {
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+/* 6. Buttons */
+.btn {
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+.btn:hover {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #fff !important;
+}
+.btn.primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #a855f7 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
+}
+.btn.primary:hover {
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #c084fc 100%) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
+}
+.btn.danger {
+  color: #fb7185 !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+.btn.danger:hover {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border-color: #f43f5e !important;
+}
+.btn.success {
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+.btn.success:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: #10b981 !important;
+}
+
+/* 7. Tables */
+.table th {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #94a3b8 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #cbd5e1 !important;
+}
+.table tr:hover td {
+  background: rgba(30, 41, 59, 0.35) !important;
+}
+
+/* 8. Inputs & Selects */
+.form-input, select, textarea {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  color: #f8fafc !important;
+}
+.form-input:focus, select:focus, textarea:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+}
+
+/* 9. Modal Dialogs */
+.modal-overlay, .modal-backdrop {
+  background: rgba(3, 7, 18, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+}
+.modal {
+  background: rgba(15, 23, 42, 0.94) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7) !important;
+  border-radius: 20px !important;
+}
+
+/* 10. Quick Actions */
+.quick-action {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+}
+.quick-action:hover {
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.25) !important;
+  transform: translateY(-2px);
 }

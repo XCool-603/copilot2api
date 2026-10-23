@@ -31,7 +31,7 @@ function Get-ServerProcess {
         $savedPid = $savedPid.Trim()
         if ($savedPid -match '^\d+$') {
             $p = Get-Process -Id ([int]$savedPid) -ErrorAction SilentlyContinue
-            if ($p -and $p.ProcessName -like "*m365*") {
+            if ($p -and ($p.ProcessName -like "*copilot*" -or $p.ProcessName -like "*m365*")) {
                 return $p
             }
         }
@@ -81,8 +81,8 @@ function Start-Server {
     $check = Get-ServerProcess
     if ($check) {
         Write-Host "Server started successfully! (PID: $($check.Id))" -ForegroundColor Green
-        Write-Host "Dashboard URL : http://127.0.0.1:4141" -ForegroundColor Green
-        Write-Host "Admin Password: $env:M365_ADMIN_PASSWORD (default)" -ForegroundColor Gray
+        Write-Host "Portal Landing: http://127.0.0.1:4141" -ForegroundColor Green
+        Write-Host "Admin Console : http://127.0.0.1:4141/console" -ForegroundColor Cyan
     } else {
         Write-Host "Failed to start server. Check logs at: $ErrFile" -ForegroundColor Red
         if (Test-Path $ErrFile) {
