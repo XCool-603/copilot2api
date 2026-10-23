@@ -61,18 +61,33 @@ func codexModelMessages() map[string]any {
 }
 
 var gatewayModels = []modelSpec{
-	{ID: "gpt-5.2", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.2-reasoning", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.3", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.4", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.4-reasoning", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.5", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.5-reasoning", Owner: "microsoft-365", Tools: true},
-	{ID: "gpt-5.6-reasoning", Owner: "microsoft-365", Tools: true},
+	// Standard Industry Models
+	{ID: "gpt-4o", Owner: "openai-via-m365", DisplayName: "GPT-4o (Omni)", Tools: true},
+	{ID: "gpt-4o-mini", Owner: "openai-via-m365", DisplayName: "GPT-4o Mini", Tools: true},
+	{ID: "gpt-4-turbo", Owner: "openai-via-m365", DisplayName: "GPT-4 Turbo", Tools: true},
+	{ID: "gpt-4", Owner: "openai-via-m365", DisplayName: "GPT-4", Tools: true},
+	{ID: "o1", Owner: "openai-via-m365", DisplayName: "o1 Reasoning", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "o1-mini", Owner: "openai-via-m365", DisplayName: "o1 Mini", Tools: true, DefaultReasoningLevel: "medium"},
+	{ID: "o1-preview", Owner: "openai-via-m365", DisplayName: "o1 Preview", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "o3-mini", Owner: "openai-via-m365", DisplayName: "o3 Mini", Tools: true, DefaultReasoningLevel: "medium"},
+	{ID: "claude-3-7-sonnet", Owner: "anthropic-via-m365", DisplayName: "Claude 3.7 Sonnet", Tools: true},
+	{ID: "claude-3-5-sonnet", Owner: "anthropic-via-m365", DisplayName: "Claude 3.5 Sonnet", Tools: true},
+	{ID: "claude-3-5-sonnet-20241022", Owner: "anthropic-via-m365", DisplayName: "Claude 3.5 Sonnet (20241022)", Tools: true},
+	{ID: "claude-3-5-haiku", Owner: "anthropic-via-m365", DisplayName: "Claude 3.5 Haiku", Tools: true},
+	{ID: "claude-3-opus", Owner: "anthropic-via-m365", DisplayName: "Claude 3 Opus", Tools: true},
+	{ID: "claude-sonnet", Owner: "anthropic-via-m365", DisplayName: "Claude Sonnet", Tools: true},
+	{ID: "claude-sonnet-reasoning", Owner: "anthropic-via-m365", DisplayName: "Claude Sonnet (Reasoning)", Tools: true},
+	// Microsoft 365 Copilot Native Tones
+	{ID: "gpt-5.6-reasoning", Owner: "microsoft-365", DisplayName: "GPT-5.6 Reasoning", Tools: true},
+	{ID: "gpt-5.5", Owner: "microsoft-365", DisplayName: "GPT-5.5 Chat", Tools: true},
+	{ID: "gpt-5.5-reasoning", Owner: "microsoft-365", DisplayName: "GPT-5.5 Reasoning", Tools: true},
+	{ID: "gpt-5.4", Owner: "microsoft-365", DisplayName: "GPT-5.4 Chat", Tools: true},
+	{ID: "gpt-5.4-reasoning", Owner: "microsoft-365", DisplayName: "GPT-5.4 Reasoning", Tools: true},
+	{ID: "gpt-5.3", Owner: "microsoft-365", DisplayName: "GPT-5.3 Chat", Tools: true},
+	{ID: "gpt-5.2", Owner: "microsoft-365", DisplayName: "GPT-5.2 Chat", Tools: true},
+	{ID: "dall-e-3", Owner: "microsoft-365", DisplayName: "DALL-E 3", Image: true},
 	{ID: "flux-3", Owner: "microsoft-365", DisplayName: "Flux 3", Image: true},
 	{ID: "flux-4", Owner: "microsoft-365", DisplayName: "Flux 4", Image: true},
-	{ID: "claude-sonnet", Owner: "anthropic-via-microsoft-365", Tools: true},
-	{ID: "claude-sonnet-reasoning", Owner: "anthropic-via-microsoft-365", Tools: true},
 }
 
 // isImageModel reports whether a public model id routes to the image
@@ -223,6 +238,32 @@ func configuredModelTone(model string, mappings []modelMapping) (string, bool) {
 
 func configuredModelSpecs(mappings []modelMapping) []modelSpec {
 	models := append([]modelSpec(nil), gatewayModels...)
+	// Dynamically add any tone discovered in live upstream sync
+	for _, tone := range liveUpstreamTones() {
+		slug := strings.ToLower(strings.ReplaceAll(tone, "_", "-"))
+		exists := false
+		for _, m := range models {
+			if strings.EqualFold(m.ID, slug) || strings.EqualFold(m.ID, tone) {
+				exists = true
+				break
+			}
+		}
+		if !exists && slug != "magic" {
+			isReasoning := strings.Contains(slug, "reasoning")
+			models = append(models, modelSpec{
+				ID:          slug,
+				Owner:       "microsoft-365-live",
+				DisplayName: fmt.Sprintf("%s (Live Upstream)", tone),
+				Tools:       true,
+				DefaultReasoningLevel: func() string {
+					if isReasoning {
+						return "high"
+					}
+					return "medium"
+				}(),
+			})
+		}
+	}
 	for _, mapping := range mappings {
 		spec := modelSpec{
 			ID: strings.TrimSpace(mapping.PublicModel), Owner: "microsoft-365", Tools: true,

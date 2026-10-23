@@ -54,6 +54,23 @@ export function AccountsPage({ push }: { push: Push }) {
   const [testModel, setTestModel] = useState("");
   const [testPrompt, setTestPrompt] = useState('Say "OK" in one word.');
   const [testResult, setTestResult] = useState<{ status: "idle" | "busy" | "ok" | "fail"; latencyMs?: number; reply?: string; error?: string }>({ status: "idle" });
+  const [syncingModels, setSyncingModels] = useState(false);
+
+  const syncModels = async () => {
+    setSyncingModels(true);
+    try {
+      const res = await api("/api/admin/models/sync", { method: "POST" });
+      push(`已从微软上游实时同步 ${res.count ?? res.upstream_tones?.length ?? 0} 个最新模型！`, "success");
+      const d = await api("/api/admin/models");
+      const ids = (d.data ?? []).map((m: any) => m.id);
+      setTestModels(ids);
+      setTestModel((prev) => prev || ids[0] || "");
+    } catch (e: any) {
+      push(String(e?.message ?? e), "error");
+    } finally {
+      setSyncingModels(false);
+    }
+  };
 
   const openTest = async () => {
     setTestResult({ status: "idle" });
@@ -315,7 +332,13 @@ export function AccountsPage({ push }: { push: Push }) {
           <h2 className="page-title">{t("Account management")}</h2>
           <p className="page-sub">授权与管理用于 API 轮询转发的 Microsoft 365 商业账号池</p>
         </div>
-        <button className="btn primary" onClick={openTest}><FlaskConical size={14} /> {t("Test models")}</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn" onClick={syncModels} disabled={syncingModels}>
+            <RefreshCw size={14} className={syncingModels ? "spin" : ""} />
+            <span>{syncingModels ? "同步上游中..." : "⚡ 实时同步上游最新模型"}</span>
+          </button>
+          <button className="btn primary" onClick={openTest}><FlaskConical size={14} /> {t("Test models")}</button>
+        </div>
       </div>
 
       {/* Add Account Card */}

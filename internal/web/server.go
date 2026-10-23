@@ -1597,33 +1597,49 @@ type responseFormat struct {
 }
 
 func modelTone(model string) string {
-	switch strings.ToLower(strings.TrimSpace(model)) {
+	m := strings.ToLower(strings.TrimSpace(model))
+	switch m {
 	case "gpt-5.2":
 		return "Gpt_5_2_Chat"
 	case "gpt-5.2-reasoning":
 		return "Gpt_5_2_Reasoning"
 	case "gpt-5.3":
 		return "Gpt_5_3_Chat"
-	case "gpt-5.4":
+	case "gpt-5.4", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo":
 		return "Gpt_5_4_Chat"
 	case "gpt-5.4-reasoning":
 		return "Gpt_5_4_Reasoning"
 	case "gpt-5.5":
 		return "Gpt_5_5_Chat"
-	case "gpt-5.5-reasoning":
+	case "gpt-5.5-reasoning", "o1", "o1-mini", "o1-preview", "o3-mini":
 		return "Gpt_5_5_Reasoning"
-	case "gpt-5.6-reasoning":
+	case "gpt-5.6", "gpt-5.6-reasoning":
 		return "Gpt_5_6_Reasoning"
-	case "claude", "claude-sonnet":
+	case "claude", "claude-sonnet", "claude-3-7-sonnet", "claude-3-5-sonnet", "claude-3-5-sonnet-20241022", "claude-3-5-haiku", "claude-3-opus":
 		return "Claude_Sonnet"
-	case "claude-sonnet-reasoning":
+	case "claude-sonnet-reasoning", "claude-3-7-sonnet-thought", "claude-3-5-sonnet-reasoning":
 		return "Claude_Sonnet_Reasoning"
+	case "flux-3", "dall-e-3":
+		return "flux-3"
+	case "flux-4":
+		return "flux-4"
 	case "gpt-5.4-quick":
 		return "Gpt_5_4_Chat"
 	case "gpt-5.3-think-deeper":
 		return "Gpt_5_3_Chat"
 	default:
-		return "magic"
+		for _, tone := range liveUpstreamTones() {
+			if strings.EqualFold(tone, m) || strings.EqualFold(strings.ReplaceAll(tone, "_", "-"), m) {
+				return tone
+			}
+		}
+		if strings.Contains(m, "claude") {
+			return "Claude_Sonnet"
+		}
+		if strings.Contains(m, "reasoning") || strings.Contains(m, "o1") || strings.Contains(m, "o3") {
+			return "Gpt_5_5_Reasoning"
+		}
+		return "Gpt_5_4_Chat"
 	}
 }
 
@@ -1904,7 +1920,8 @@ func (s *Server) adminModelSync(w http.ResponseWriter, r *http.Request) {
 	}
 	syncUpstreamTones()
 	tones := liveUpstreamTones()
-	jsonOut(w, map[string]any{"synced": true, "upstream_tones": tones, "count": len(tones)})
+	data := modelCatalog()
+	jsonOut(w, map[string]any{"synced": true, "upstream_tones": tones, "count": len(data), "data": data})
 }
 
 func (s *Server) adminModels(w http.ResponseWriter, r *http.Request) {
@@ -3784,7 +3801,7 @@ func (s *Server) handlePublicStatus(w http.ResponseWriter, r *http.Request) {
 		"service":      "copilot2api",
 		"version":      Version,
 		"status":       "online",
-		"models_count": 6,
+		"models_count": len(modelCatalog()),
 		"accounts":     accCount,
 	})
 }
@@ -3843,6 +3860,7 @@ func (s *Server) pollDeviceCode(w http.ResponseWriter, r *http.Request) {
 		writeOpenAIError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	s.InitM365CloudClient()
 
 	jsonOut(w, map[string]any{
 		"status": "success",
