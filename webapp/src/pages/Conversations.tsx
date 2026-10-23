@@ -32,7 +32,13 @@ export function ConversationsPage({ push }: { push: Push }) {
       setRows(d.data ?? []);
       setWarning(d.warning ?? "");
     } catch (e: any) {
-      push(String(e?.message ?? e), "error");
+      const msg = String(e?.message ?? e);
+      if (msg.includes("m365_not_configured") || msg.includes("503")) {
+        setWarning("M365 cloud client not configured. Please add an M365 account in Accounts tab.");
+        setRows([]);
+      } else {
+        push(msg, "error");
+      }
     } finally {
       setLoading(false);
     }

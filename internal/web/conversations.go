@@ -142,7 +142,11 @@ func (s *Server) handleM365Conversations(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if m365CloudClient == nil && len(s.sessionResolver.ListSessions()) == 0 {
-		writeOpenAIError(w, http.StatusServiceUnavailable, "m365_not_configured", "M365 cloud client not configured. Please add an M365 account first via PKCE authorization.")
+		jsonOut(w, map[string]any{
+			"count":   0,
+			"data":    []any{},
+			"warning": "M365 cloud client not configured. Please add an M365 account first via PKCE or Device Code authorization.",
+		})
 		return
 	}
 	rows := make(map[string]map[string]any)
@@ -158,8 +162,11 @@ func (s *Server) handleM365Conversations(w http.ResponseWriter, r *http.Request)
 		}
 	}
 	if cloudErr != nil && len(s.sessionResolver.ListSessions()) == 0 {
-		err := cloudErr
-		writeOpenAIError(w, http.StatusBadGateway, "m365_error", err.Error())
+		jsonOut(w, map[string]any{
+			"count":   0,
+			"data":    []any{},
+			"warning": "Failed to reach M365 cloud: " + cloudErr.Error(),
+		})
 		return
 	}
 	for _, session := range s.sessionResolver.ListSessions() {

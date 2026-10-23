@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { X } from "lucide-react";
 import { t } from "./i18n";
 
@@ -64,11 +64,11 @@ export function ToastHost({
 
 export function useToasts() {
   const [toasts, setToasts] = useState<{ id: number; message: string; kind: "success" | "error" | "info" }[]>([]);
-  const push = (message: string, kind: "success" | "error" | "info" = "info") => {
+  const push = useCallback((message: string, kind: "success" | "error" | "info" = "info") => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev.slice(-2), { id, message, kind }]);
-  };
-  const dismiss = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+  const dismiss = useCallback((id: number) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
   return { toasts, push, dismiss };
 }
 
