@@ -100,7 +100,7 @@ export default function App() {
       <div className="sidebar">
         <div className="logo">
           <span className="logo-mark" aria-hidden="true"><span /><span /><span /><span /></span>
-          <span className="logo-text">M365 Copilot2API</span>
+          <span className="logo-text">Copilot2API</span>
         </div>
         <div className="nav-label">{t("Navigation")}</div>
         <nav className="nav" aria-label={t("Navigation")}>
@@ -134,6 +134,9 @@ export default function App() {
             >
               {LOCALES.map((l) => (<option key={l.id} value={l.id}>{l.label}</option>))}
             </select>
+            <a href="/" className="btn btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'inherit' }}>
+              <Globe size={13} /> {t("Portal")}
+            </a>
             <button className="btn btn-sm logout-btn" onClick={async () => {
               await api("/api/admin/logout", { method: "POST" }).catch(() => {});
               try { sessionStorage.clear(); } catch {}

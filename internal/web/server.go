@@ -564,6 +564,13 @@ func (s *Server) Routes() http.Handler {
 	m.HandleFunc("/v1/memory/instructions", s.handleMemoryInstructions)
 	m.HandleFunc("/v1/memory/instructions/", s.handleMemoryInstructionsID)
 	m.HandleFunc("/v1/memory/settings", s.handleMemorySettings)
+	// Public status and portal routes
+	m.HandleFunc("/ui/public/status", s.handlePublicStatus)
+	m.HandleFunc("/portal", s.portalPage)
+	m.HandleFunc("/console", s.consolePage)
+	m.HandleFunc("/console/", s.consolePage)
+	m.HandleFunc("/dashboard", s.consolePage)
+	m.HandleFunc("/dashboard/", s.consolePage)
 	// React SPA bundle (Vite output lives under web/webapp inside the embed).
 	m.HandleFunc("/webapp/", s.serveWebApp)
 	m.HandleFunc("/", s.rootPage)
@@ -582,7 +589,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/" || r.URL.Path == "/login" {
+		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/" || r.URL.Path == "/login" || r.URL.Path == "/portal" || r.URL.Path == "/console" || r.URL.Path == "/console/" || r.URL.Path == "/dashboard" || r.URL.Path == "/dashboard/" || r.URL.Path == "/ui/public/status" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -3758,4 +3765,24 @@ func extractOIDTID(accessToken string) (oid, tid string) {
 		tid = v
 	}
 	return oid, tid
+}
+
+func (s *Server) handlePublicStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		writeOpenAIError(w, http.StatusMethodNotAllowed, "invalid_request_error", "method not allowed")
+		return
+	}
+	accCount := 0
+	if s.tokens != nil {
+		accCount = len(s.tokens.List())
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"service":      "copilot2api",
+		"version":      Version,
+		"status":       "online",
+		"models_count": 6,
+		"accounts":     accCount,
+	})
 }
