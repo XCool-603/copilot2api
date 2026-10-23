@@ -531,6 +531,8 @@ func (s *Server) Routes() http.Handler {
 	m.HandleFunc("/api/accounts/provision", s.provisionAccount)
 	m.HandleFunc("/api/accounts/bind-proxy", s.bindProxy)
 	m.HandleFunc("/api/auth/start", s.startPKCE)
+	m.HandleFunc("/api/auth/device/start", s.startDeviceCode)
+	m.HandleFunc("/api/auth/device/poll", s.pollDeviceCode)
 	m.HandleFunc("/api/auth/status", s.pkceStatus)
 	m.HandleFunc("/api/auth/callback", s.callbackPKCE)
 	m.HandleFunc("/api/chat", s.chatOnce)
@@ -589,7 +591,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/" || r.URL.Path == "/login" || r.URL.Path == "/portal" || r.URL.Path == "/console" || r.URL.Path == "/console/" || r.URL.Path == "/dashboard" || r.URL.Path == "/dashboard/" || r.URL.Path == "/ui/public/status" {
+		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/api/auth/device/start" || r.URL.Path == "/api/auth/device/poll" || r.URL.Path == "/" || r.URL.Path == "/login" || r.URL.Path == "/portal" || r.URL.Path == "/console" || r.URL.Path == "/console/" || r.URL.Path == "/dashboard" || r.URL.Path == "/dashboard/" || r.URL.Path == "/ui/public/status" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -3784,5 +3786,73 @@ func (s *Server) handlePublicStatus(w http.ResponseWriter, r *http.Request) {
 		"status":       "online",
 		"models_count": 6,
 		"accounts":     accCount,
+	})
+}
+
+func (s *Server) startDeviceCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		writeOpenAIError(w, http.StatusMethodNotAllowed, "invalid_request_error", "method not allowed")
+		return
+	}
+	dc, err := auth.StartDeviceCode()
+	if err != nil {
+		writeOpenAIError(w, http.StatusBadRequest, "auth_error", err.Error())
+		return
+	}
+	jsonOut(w, map[string]any{
+		"status":           "device_code_ready",
+		"user_code":        dc.UserCode,
+		"device_code":      dc.DeviceCode,
+		"verification_uri": dc.VerificationURI,
+		"message":          dc.Message,
+		"expires_in":       dc.ExpiresIn,
+		"interval":         dc.Interval,
+	})
+}
+
+func (s *Server) pollDeviceCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeOpenAIError(w, http.StatusMethodNotAllowed, "invalid_request_error", "method not allowed")
+		return
+	}
+	var req struct {
+		DeviceCode string `json:"device_code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.DeviceCode == "" {
+		writeOpenAIError(w, http.StatusBadRequest, "invalid_request_error", "missing device_code")
+		return
+	}
+
+	tok, ok, err := auth.PollDeviceCode(req.DeviceCode)
+	if err != nil {
+		jsonOut(w, map[string]any{
+			"status": "error",
+			"error":  err.Error(),
+		})
+		return
+	}
+	if !ok {
+		jsonOut(w, map[string]any{
+			"status": "pending",
+		})
+		return
+	}
+
+	acc, err := s.tokens.Upsert(tok)
+	if err != nil {
+		writeOpenAIError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	jsonOut(w, map[string]any{
+		"status": "success",
+		"account": map[string]any{
+			"id":          acc.ID,
+			"email":       acc.Email,
+			"displayName": acc.DisplayName,
+			"status":      acc.Status,
+			"oid":         acc.OID,
+			"tid":         acc.TID,
+		},
 	})
 }
