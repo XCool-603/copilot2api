@@ -1,11 +1,8 @@
 FROM golang:1.23-alpine AS build
 
 WORKDIR /src
-ENV GOPROXY=https://goproxy.cn,direct
-COPY go.mod go.sum ./
-RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/copilot2api ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -trimpath -ldflags="-s -w" -o /out/copilot2api ./cmd/server
 
 FROM alpine:3.20
 RUN addgroup -S m365 && adduser -S -G m365 m365 \
