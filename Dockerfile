@@ -5,12 +5,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -trimpath -ldflags="-s -w" -o /out/copilot2api ./cmd/server
 
 FROM alpine:3.20
-RUN addgroup -S m365 && adduser -S -G m365 m365 \
+RUN apk add --no-cache ca-certificates tzdata \
     && mkdir -p /data /app
 WORKDIR /app
 COPY --from=build /out/copilot2api /app/copilot2api
-RUN chown -R m365:m365 /app /data
-USER m365
 EXPOSE 4141
 ENV M365_LISTEN=0.0.0.0:4141 \
     M365_DATA_DIR=/data \
