@@ -249,32 +249,6 @@ func configuredModelTone(model string, mappings []modelMapping) (string, bool) {
 
 func configuredModelSpecs(mappings []modelMapping) []modelSpec {
 	models := append([]modelSpec(nil), gatewayModels...)
-	// Dynamically add any tone discovered in live upstream sync
-	for _, tone := range liveUpstreamTones() {
-		slug := strings.ToLower(strings.ReplaceAll(tone, "_", "-"))
-		exists := false
-		for _, m := range models {
-			if strings.EqualFold(m.ID, slug) || strings.EqualFold(m.ID, tone) {
-				exists = true
-				break
-			}
-		}
-		if !exists && slug != "magic" {
-			isReasoning := strings.Contains(slug, "reasoning")
-			models = append(models, modelSpec{
-				ID:          slug,
-				Owner:       "microsoft-365-live",
-				DisplayName: fmt.Sprintf("%s (Live Upstream)", tone),
-				Tools:       true,
-				DefaultReasoningLevel: func() string {
-					if isReasoning {
-						return "high"
-					}
-					return "medium"
-				}(),
-			})
-		}
-	}
 	for _, mapping := range mappings {
 		spec := modelSpec{
 			ID: strings.TrimSpace(mapping.PublicModel), Owner: "microsoft-365", Tools: true,
