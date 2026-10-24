@@ -692,7 +692,7 @@ func (h *accountHealth) MarkFailure(accountID string, err error, window time.Dur
 	}
 	cat := ClassifyError(err)
 	GlobalCircuitRecord(err)
-	if cat == CategoryClientCanceled {
+	if cat == CategoryClientCanceled || errors.Is(err, chathub.ErrEmptyCompletion) {
 		return
 	}
 	h.mu.Lock()

@@ -90,6 +90,11 @@ func (s *Server) markAccountResult(accountID string, err error) {
 		return
 	}
 	if err != nil {
+		if errors.Is(err, chathub.ErrEmptyCompletion) {
+			// Unsupported tone on tenant is a model/tone mismatch,
+			// NOT an account credential or rate-limit failure. Never cool down the account!
+			return
+		}
 		s.accountPool.MarkFailure(accountID, err, s.getRateLimitCooldown())
 		return
 	}
@@ -1600,14 +1605,10 @@ type responseFormat struct {
 func modelTone(model string) string {
 	m := strings.ToLower(strings.TrimSpace(model))
 	switch m {
-	case "gpt-6.1":
-		return "Gpt_6_1_Chat"
-	case "gpt-6.1-reasoning":
-		return "Gpt_6_1_Reasoning"
-	case "gpt-6.0", "gpt-6", "gpt-6-astra":
-		return "Gpt_6_0_Chat"
-	case "gpt-6.0-reasoning", "gpt-6-reasoning":
-		return "Gpt_6_0_Reasoning"
+	case "gpt-6.1", "gpt-6.0", "gpt-6", "gpt-6-astra":
+		return "Gpt_5_5_Chat"
+	case "gpt-6.1-reasoning", "gpt-6.0-reasoning", "gpt-6-reasoning":
+		return "Gpt_5_6_Reasoning"
 	case "gpt-5.2":
 		return "Gpt_5_2_Chat"
 	case "gpt-5.2-reasoning":

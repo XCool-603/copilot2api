@@ -2,6 +2,8 @@ package web
 
 import (
 	"context"
+	"errors"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -142,6 +144,12 @@ func (s *Server) chatWithAccount(ctx context.Context, accountID string, account 
 		s.accountPool.MarkCall(accountID)
 	}
 	result, err := s.accountClient(accountID).Chat(ctx, account, request)
+	if err != nil && (errors.Is(err, chathub.ErrEmptyCompletion) || ClassifyError(err) == CategoryWSReadTimeout) && request.Tone != "magic" && request.Tone != "" {
+		log.Printf("[tone-fallback] tone=%q failed (%v); seamless auto-retry with native magic tone for account=%s", request.Tone, err, accountID)
+		fallbackReq := request
+		fallbackReq.Tone = "magic"
+		result, err = s.accountClient(accountID).Chat(ctx, account, fallbackReq)
+	}
 	s.markAccountResult(accountID, err)
 	return result, err
 }
@@ -155,7 +163,21 @@ func (s *Server) chatWithAccountEvents(ctx context.Context, accountID string, ac
 	if s.accountPool != nil {
 		s.accountPool.MarkCall(accountID)
 	}
-	result, err := s.accountClient(accountID).ChatWithEvents(ctx, account, request, onEvent)
+	hasEmitted := false
+	wrappedOnEvent := func(ev chathub.StreamEvent) error {
+		hasEmitted = true
+		if onEvent != nil {
+			return onEvent(ev)
+		}
+		return nil
+	}
+	result, err := s.accountClient(accountID).ChatWithEvents(ctx, account, request, wrappedOnEvent)
+	if err != nil && !hasEmitted && (errors.Is(err, chathub.ErrEmptyCompletion) || ClassifyError(err) == CategoryWSReadTimeout) && request.Tone != "magic" && request.Tone != "" {
+		log.Printf("[tone-fallback-events] tone=%q failed (%v); seamless auto-retry with native magic tone for account=%s", request.Tone, err, accountID)
+		fallbackReq := request
+		fallbackReq.Tone = "magic"
+		result, err = s.accountClient(accountID).ChatWithEvents(ctx, account, fallbackReq, onEvent)
+	}
 	s.markAccountResult(accountID, err)
 	return result, err
 }
@@ -169,7 +191,28 @@ func (s *Server) chatWithAccountReasoning(ctx context.Context, accountID string,
 	if s.accountPool != nil {
 		s.accountPool.MarkCall(accountID)
 	}
-	result, err := s.accountClient(accountID).ChatWithReasoning(ctx, account, request, onDelta, onReasoning)
+	hasEmitted := false
+	wrappedOnDelta := func(delta string) error {
+		hasEmitted = true
+		if onDelta != nil {
+			return onDelta(delta)
+		}
+		return nil
+	}
+	wrappedOnReasoning := func(reasoning string) error {
+		hasEmitted = true
+		if onReasoning != nil {
+			return onReasoning(reasoning)
+		}
+		return nil
+	}
+	result, err := s.accountClient(accountID).ChatWithReasoning(ctx, account, request, wrappedOnDelta, wrappedOnReasoning)
+	if err != nil && !hasEmitted && (errors.Is(err, chathub.ErrEmptyCompletion) || ClassifyError(err) == CategoryWSReadTimeout) && request.Tone != "magic" && request.Tone != "" {
+		log.Printf("[tone-fallback-reasoning] tone=%q failed (%v); seamless auto-retry with native magic tone for account=%s", request.Tone, err, accountID)
+		fallbackReq := request
+		fallbackReq.Tone = "magic"
+		result, err = s.accountClient(accountID).ChatWithReasoning(ctx, account, fallbackReq, onDelta, onReasoning)
+	}
 	s.markAccountResult(accountID, err)
 	return result, err
 }

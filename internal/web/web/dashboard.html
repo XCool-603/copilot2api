@@ -1635,11 +1635,15 @@ print(response.choices[0].message.content)</pre>
 
     async function clearAllCooldowns() {
       try {
-        await fetch('/api/accounts/clear-cooldown', { method: 'POST' });
-        showToast('已一键清除全部限流冷却，所有就绪账号恢复调度！', 'success');
-        refreshData();
+        const res = await fetch('/api/accounts/clear-cooldown', { credentials: 'include', method: 'POST' });
+        if (res.ok) {
+          showToast('已成功清除全部限流冷却状态，所有账号即刻恢复就绪调度！', 'success');
+        } else {
+          showToast('清除限流冷却失败，请检查鉴权权限', 'error');
+        }
+        await refreshData();
       } catch (e) {
-        showToast(`操作失败: ${e}`, 'error');
+        showToast(`操作异常: ${e}`, 'error');
       }
     }
 

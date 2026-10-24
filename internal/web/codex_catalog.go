@@ -317,9 +317,9 @@ func reasoningTone(model, effort string) (string, error) {
 	}
 	switch strings.ToLower(strings.TrimSpace(model)) {
 	case "gpt-6.1", "gpt-6.1-reasoning":
-		return "Gpt_6_1_Reasoning", nil
+		return "Gpt_5_6_Reasoning", nil
 	case "gpt-6.0", "gpt-6.0-reasoning", "gpt-6", "gpt-6-reasoning", "gpt-6-astra":
-		return "Gpt_6_0_Reasoning", nil
+		return "Gpt_5_6_Reasoning", nil
 	case "claude", "claude-sonnet":
 		return "Claude_Sonnet_Reasoning", nil
 	case "gpt-5.2":
