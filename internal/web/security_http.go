@@ -52,7 +52,7 @@ func (s *Server) rootPage(w http.ResponseWriter, r *http.Request) {
 			writeOpenAIError(w, http.StatusMethodNotAllowed, "invalid_request_error", "method not allowed")
 			return
 		}
-		s.serveWebAppShell(w, r)
+		s.serveLegacyPage(w, r, "dashboard.html")
 		return
 	}
 	http.NotFound(w, r)
@@ -63,7 +63,7 @@ func (s *Server) portalPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) consolePage(w http.ResponseWriter, r *http.Request) {
-	s.serveWebAppShell(w, r)
+	s.serveLegacyPage(w, r, "dashboard.html")
 }
 
 func (s *Server) serveLegacyPage(w http.ResponseWriter, r *http.Request, name string) {

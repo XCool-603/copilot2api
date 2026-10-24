@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copilot 2API · M365 企业级智能聚合网关</title>
+  <!-- Tailwind CSS 加载与国内镜像双源容灾 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (!window.tailwind) {
+      document.write('<script src="https://registry.npmmirror.com/tailwindcss-cdn/3.4.1/files/dist/tailwind.min.js"><\/script>');
+    }
+  </script>
+  <script>
+    if (!window.tailwind) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"><\/script>');
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            surface: {
+              card: '#0f172a',
+              deep: '#030712',
+              border: '#1e293b',
+              glow: 'rgba(99, 102, 241, 0.15)',
+            }
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.3)',
+            'glow-purple': '0 0 25px -5px rgba(168, 85, 247, 0.3)',
+            'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.3)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      background-image: 
+        radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(14, 165, 233, 0.06) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .neon-border-blue:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.25);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .animate-pulse-slow {
+      animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+  
+  <!-- Global Toast Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- Top Navigation / Header -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Left: Logo & Subtitle -->
+      <div class="flex items-center gap-3.5">
+        <div class="relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span class="absolute -bottom-1 -right-1 flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">Copilot<span class="text-indigo-400">2API</span></h1>
+            <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30 rounded-full tracking-wide">
+              PRO
+            </span>
+            <span id="appVersionText" class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              v1.2.0
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-mono hidden sm:block">企业级 M365 Copilot 原生 ChatHub 智能聚合网关</p>
+        </div>
+      </div>
+
+      <!-- Right: Compact Clean Action Bar -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Link to Public Portal -->
+        <a href="/" target="_self" title="访问前台门户展示页" class="px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 rounded-xl text-slate-300 hover:text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 group">
+          <svg class="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="hidden sm:inline">前台门户</span>
+        </a>
+
+        <!-- Link to GitHub Repo -->
+        <a href="https://github.com/XCool-603/copilot2api" target="_blank" rel="noopener noreferrer" title="访问 GitHub 官方仓库" class="px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl text-slate-300 hover:text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 group">
+          <svg class="w-3.5 h-3.5 fill-current text-slate-400 group-hover:text-white transition" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+
+        <!-- Quick OAuth Dropdown / Group -->
+        <div class="relative">
+          <button id="btnHeaderAuthMenu" onclick="toggleHeaderAuthMenu()" class="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>添加账号</span>
+            <svg class="w-3 h-3 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <!-- Dropdown popup -->
+          <div id="headerAuthDropdown" class="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-1.5 hidden z-50">
+            <button onclick="openDeviceCodeModal(); toggleHeaderAuthMenu();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium text-slate-200 hover:bg-slate-800/80 hover:text-white flex items-center gap-2.5 transition group">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
+              <div>
+                <div class="font-semibold text-white">微软设备码授权 (推荐)</div>
+                <div class="text-[10px] text-slate-400">9位码一键完成，无需本地开端口</div>
+              </div>
+            </button>
+            <div class="h-px bg-slate-800 my-1"></div>
+            <button onclick="openPKCEModal(); toggleHeaderAuthMenu();" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white flex items-center gap-2.5 transition">
+              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+              <span>标准 PKCE OAuth 授权</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Clear Cooldown Button -->
+        <button onclick="clearAllCooldowns()" title="一键清除全部限流冷却" class="p-2 text-slate-400 hover:text-amber-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </button>
+
+        <!-- Refresh Button -->
+        <button onclick="refreshData()" title="刷新数据" class="p-2 text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition duration-200">
+          <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
+
+        <div class="h-5 w-px bg-slate-800"></div>
+
+        <!-- Admin Profile Pill -->
+        <div id="navUserBadge" class="flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-xs font-mono text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="font-medium text-white max-w-[100px] truncate">Admin</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">已鉴权</span>
+          <button onclick="doLogout()" title="退出登录" class="ml-1 text-slate-500 hover:text-rose-400 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    
+    <!-- Unprotected Security Warning Banner -->
+    <div id="unprotectedWarningBanner" class="hidden p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <div class="text-sm font-semibold text-amber-300">安全风险警示：当前控制台尚未配置管理访问密码</div>
+          <div class="text-xs text-amber-200/80 mt-0.5">任何可访问此服务端口的人员均可查看账号凭证与操作控制台。强烈建议立即配置管理密码，以激活全局鉴权与安全防护！</div>
+        </div>
+      </div>
+      <button onclick="openChangePasswordModal()" class="px-3.5 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl transition shrink-0 shadow-sm self-start sm:self-auto">
+        立即配置密码
+      </button>
+    </div>
+
+    <!-- Modern Top Nav Tabs (New API / SaaS Dashboard Style) -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div class="flex items-center gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 overflow-x-auto custom-scroll max-w-full">
+        <button id="mainTabBtn-accounts" onclick="switchMainTab('accounts')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/25 transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>账号池矩阵</span>
+        </button>
+        <button id="mainTabBtn-access" onclick="switchMainTab('access')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          <span>客户端接入 & Key</span>
+        </button>
+        <button id="mainTabBtn-analytics" onclick="switchMainTab('analytics')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>模型矩阵 & 用量分析</span>
+        </button>
+        <button id="mainTabBtn-playground" onclick="switchMainTab('playground')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>在线调试 & 流水</span>
+        </button>
+        <button id="mainTabBtn-conversations" onclick="switchMainTab('conversations')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span>会话管理</span>
+        </button>
+        <button id="mainTabBtn-settings" onclick="switchMainTab('settings')" class="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition whitespace-nowrap">
+          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>系统设置</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: 账号池矩阵 & 负载监控 -->
+    <div id="tabContent-accounts" class="space-y-6">
+      <!-- Metrics Dashboard -->
+      <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">总账号资产</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statTotal" class="text-2xl font-bold font-mono text-white">0</span>
+            <span class="text-[10px] text-slate-500">ACCOUNTS</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-indigo-400">
+            <span>智能轮询调度</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">健康可调度</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statHealthy" class="text-2xl font-bold font-mono text-emerald-400">0</span>
+            <span class="text-[10px] text-emerald-500/70">READY</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-emerald-400/80">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5"></span>
+            <span>正常就绪</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">限流冷却中</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statCooling" class="text-2xl font-bold font-mono text-amber-400">0</span>
+            <span class="text-[10px] text-amber-500/70">COOLING</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-amber-400/80">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block mr-1.5"></span>
+            <span>自愈退避</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl group-hover:bg-rose-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">调度暂停</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statDisabled" class="text-2xl font-bold font-mono text-slate-400">0</span>
+            <span class="text-[10px] text-slate-500">PAUSED</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-slate-400">
+            <span>手动停用</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">实时就绪模型</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statModels" class="text-2xl font-bold font-mono text-purple-400">32</span>
+            <span class="text-[10px] text-purple-400/70">MODELS</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-purple-400/80">
+            <span>GPT-6 / 4o / Claude</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden group">
+          <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition"></div>
+          <p class="text-xs font-medium text-slate-400">活跃会话缓存</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="statSessions" class="text-2xl font-bold font-mono text-cyan-400">0</span>
+            <span class="text-[10px] text-cyan-400/70">SESSIONS</span>
+          </div>
+          <div class="mt-2 flex items-center text-[11px] text-cyan-400/80">
+            <span>ChatHub 长连保持</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Account Actions & Filter Toolbar -->
+      <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div class="relative flex-1 sm:w-72">
+            <input id="searchAccountInput" oninput="renderAccounts()" type="text" placeholder="搜索账号邮箱 / 租户 ID / 备注..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <select id="filterStatusSelect" onchange="renderAccounts()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+            <option value="all">全部状态</option>
+            <option value="healthy">正常就绪</option>
+            <option value="cooling">限流冷却</option>
+            <option value="disabled">已暂停</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+          <button onclick="openDeviceCodeModal()" class="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>添加 M365 账号</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Accounts Grid -->
+      <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB 2: 客户端接入 & Key -->
+    <div id="tabContent-access" class="space-y-6 hidden">
+      <!-- Base URL Endpoint Info -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-sm font-bold text-white">OpenAI 协议兼容接口</h3>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">标准兼容</span>
+          </div>
+          <p class="text-xs text-slate-400">适用于 NextChat, ChatBox, OneAPI, NewAPI, LobeChat, LangChain, 沉浸式翻译等绝大多数客户端。</p>
+          <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2.5 font-mono text-xs">
+            <span class="text-slate-400 select-none">Base URL:</span>
+            <input id="openaiBaseUrlInput" readonly type="text" class="bg-transparent text-emerald-300 flex-1 focus:outline-none" value="">
+            <button onclick="copyElementText('openaiBaseUrlInput')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] transition">复制</button>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <h3 class="text-sm font-bold text-white">Anthropic 协议原生端点</h3>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Claude 兼容</span>
+          </div>
+          <p class="text-xs text-slate-400">支持 Claude 3.7 / 3.5 原生请求格式，支持思维链 (Thinking) 输出与流式响应。</p>
+          <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2.5 font-mono text-xs">
+            <span class="text-slate-400 select-none">Base URL:</span>
+            <input id="anthropicBaseUrlInput" readonly type="text" class="bg-transparent text-indigo-300 flex-1 focus:outline-none" value="">
+            <button onclick="copyElementText('anthropicBaseUrlInput')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] transition">复制</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Keys Section -->
+      <section class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>网关访问凭证 (API Keys)</span>
+              <span id="keysCountBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">0</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">客户端发起调用时在 Authorization: Bearer 中附带的访问密钥。</p>
+          </div>
+          <button onclick="openCreateKeyModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>生成新 API Key</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80 pb-2">
+                <th class="py-2.5 px-3 font-medium">名称 / 备注</th>
+                <th class="py-2.5 px-3 font-medium">KEY 前缀</th>
+                <th class="py-2.5 px-3 font-medium">状态</th>
+                <th class="py-2.5 px-3 font-medium">创建时间</th>
+                <th class="py-2.5 px-3 font-medium text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="keysTableBody" class="divide-y divide-slate-800/40 text-slate-300">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Code Integration Examples -->
+      <section class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <h3 class="text-sm font-bold text-white">客户端接入示例 (Python / cURL)</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Python -->
+          <div class="space-y-2">
+            <span class="text-xs text-slate-400 font-semibold">Python (OpenAI SDK):</span>
+            <pre class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto custom-scroll">from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-your-copilot2api-key",
+    base_url="<span class="text-emerald-400" id="codeSampleOpenAIBase">http://127.0.0.1:4141/v1</span>"
+)
+
+response = client.chat.completions.create(
+    model="gpt-6.1",
+    messages=[{"role": "user", "content": "你好！"}]
+)
+print(response.choices[0].message.content)</pre>
+          </div>
+
+          <!-- cURL -->
+          <div class="space-y-2">
+            <span class="text-xs text-slate-400 font-semibold">cURL 请求示例:</span>
+            <pre class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-xs font-mono text-emerald-300 overflow-x-auto custom-scroll">curl <span class="text-indigo-400" id="codeSampleCurlBase">http://127.0.0.1:4141/v1</span>/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-key" \
+  -d '{
+    "model": "gpt-6.1",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": false
+  }'</pre>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 3: 模型矩阵 & 用量分析 -->
+    <div id="tabContent-analytics" class="space-y-6 hidden">
+      <!-- Filter Bar -->
+      <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll max-w-full pb-1 sm:pb-0">
+          <button onclick="filterModelsByCategory('all')" id="modelFilterBtn-all" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition">全部模型 (32)</button>
+          <button onclick="filterModelsByCategory('gpt6')" id="modelFilterBtn-gpt6" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">GPT-6 旗舰</button>
+          <button onclick="filterModelsByCategory('openai')" id="modelFilterBtn-openai" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">GPT-4o / o 系列</button>
+          <button onclick="filterModelsByCategory('claude')" id="modelFilterBtn-claude" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">Claude 3.7 / 3.5</button>
+          <button onclick="filterModelsByCategory('draw')" id="modelFilterBtn-draw" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">绘图创作</button>
+        </div>
+
+        <div class="text-xs text-slate-400">
+          <span>上游直通：</span>
+          <span class="text-emerald-400 font-mono font-semibold">M365 Copilot Native ChatHub</span>
+        </div>
+      </div>
+
+      <!-- Models Grid -->
+      <div id="modelsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB 4: 在线调试 & 流水 -->
+    <div id="tabContent-playground" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Input Control -->
+        <div class="lg:col-span-5 glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            <span>调试参数配置</span>
+          </h3>
+
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400 font-medium">选择测试模型</label>
+            <select id="playModelSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400 font-medium">System Prompt (系统人设)</label>
+            <textarea id="playSystemPrompt" rows="2" placeholder="You are a helpful AI assistant." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 custom-scroll font-mono"></textarea>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400 font-medium">User Prompt (用户输入)</label>
+            <textarea id="playUserPrompt" rows="4" placeholder="输入测试问题，例如：用 Python 写一个快速排序" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 custom-scroll">请介绍一下你自己，以及你支持哪些核心功能？</textarea>
+          </div>
+
+          <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+            <div class="flex items-center gap-2">
+              <input id="playStreamToggle" type="checkbox" checked class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0">
+              <label for="playStreamToggle" class="text-xs text-slate-300">流式打字机输出 (Stream)</label>
+            </div>
+            <button id="btnPlaygroundSend" onclick="sendPlaygroundChat()" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition flex items-center gap-1.5">
+              <svg id="playSendIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              <span>发送测试请求</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Response Output -->
+        <div class="lg:col-span-7 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <h3 class="text-sm font-bold text-white">模型响应输出</h3>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-mono text-slate-400">
+              <span id="playLatencyBadge" class="hidden text-emerald-400">耗时: 0ms</span>
+              <button onclick="copyPlaygroundOutput()" class="hover:text-white transition">复制输出</button>
+            </div>
+          </div>
+
+          <div id="playResponseBox" class="flex-1 min-h-[300px] bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-y-auto custom-scroll whitespace-pre-wrap leading-relaxed">
+            等待发起请求...
+          </div>
+        </div>
+      </div>
+
+      <!-- Request Logs Table -->
+      <section class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>实时网关请求流水 (Recent Logs)</span>
+          </h3>
+          <button onclick="refreshData()" class="text-xs text-slate-400 hover:text-indigo-400 transition" title="刷新流水">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80 pb-2">
+                <th class="py-2.5 px-3 font-medium">时间</th>
+                <th class="py-2.5 px-3 font-medium">方法</th>
+                <th class="py-2.5 px-3 font-medium">路径</th>
+                <th class="py-2.5 px-3 font-medium">状态码</th>
+                <th class="py-2.5 px-3 font-medium text-right">耗时</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody" class="divide-y divide-slate-800/40 text-slate-300">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 5: 会话管理 -->
+    <div id="tabContent-conversations" class="space-y-6 hidden">
+      <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white">M365 ChatHub 原生会话池</h3>
+            <p class="text-xs text-slate-400 mt-1">管理与微软 ChatHub WebSocket 建立的长生命周期会话缓存。</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="cleanupAllConversations()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold transition">
+              清空全部过期会话
+            </button>
+            <button onclick="loadConversations()" class="p-2 text-slate-400 hover:text-white bg-slate-900 border border-slate-800 rounded-xl transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80 pb-2">
+                <th class="py-2.5 px-3 font-medium">会话 ID (Conversation ID)</th>
+                <th class="py-2.5 px-3 font-medium">归属账号</th>
+                <th class="py-2.5 px-3 font-medium">消息数</th>
+                <th class="py-2.5 px-3 font-medium">最后活跃</th>
+                <th class="py-2.5 px-3 font-medium text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="conversationsTableBody" class="divide-y divide-slate-800/40 text-slate-300">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-500 font-sans">加载会话中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: 系统设置 -->
+    <div id="tabContent-settings" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Change Password Card -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <span>修改控制台管理密码</span>
+          </h3>
+          <p class="text-xs text-slate-400">配置高强度管理密码后，访问控制台将开启安全登录校验。</p>
+          
+          <form onsubmit="doChangePassword(event)" class="space-y-3">
+            <div>
+              <label class="text-xs text-slate-400">原管理密码 (首次配置留空)</label>
+              <input id="inputOldPassword" type="password" placeholder="原密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">新管理密码 (建议至少8位，包含字母与数字)</label>
+              <input id="inputNewPassword" type="password" required placeholder="新密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">确认新密码</label>
+              <input id="inputConfirmPassword" type="password" required placeholder="确认新密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition mt-2">
+              保存并更新密码
+            </button>
+          </form>
+        </div>
+
+        <!-- Runtime Info Card -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>网关运行环境信息</span>
+          </h3>
+          <div class="space-y-2 text-xs font-mono text-slate-300">
+            <div class="flex justify-between py-1.5 border-b border-slate-800/60">
+              <span class="text-slate-500">服务核心:</span>
+              <span class="text-white">Copilot2API Daemon</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-800/60">
+              <span class="text-slate-500">当前版本:</span>
+              <span id="runtimeVersion" class="text-indigo-400">v1.2.0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-800/60">
+              <span class="text-slate-500">运行模式:</span>
+              <span id="runtimeDocker" class="text-emerald-400">Docker 容器环境</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-800/60">
+              <span class="text-slate-500">数据挂载目录:</span>
+              <span class="text-slate-300">./data (已持久化保护)</span>
+            </div>
+            <div class="flex justify-between py-1.5">
+              <span class="text-slate-500">ChatHub 协议:</span>
+              <span class="text-cyan-400">WSS Sydney Protocol v1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Device Code Modal -->
+  <div id="deviceCodeModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-slate-700/80 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span>微软设备码授权 (Device Code Flow)</span>
+        </h3>
+        <button onclick="closeDeviceCodeModal()" class="text-slate-500 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- State: Loading / Getting Code -->
+      <div id="deviceStateLoading" class="py-8 text-center space-y-3">
+        <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-xs text-slate-400">正在向微软身份认证中心申请配对设备码...</p>
+      </div>
+
+      <!-- State: Display Code & Polling -->
+      <div id="deviceStateReady" class="space-y-4 hidden">
+        <div class="text-center space-y-2">
+          <p class="text-xs text-slate-400">请复制下方 9 位验证码，并在微软官方验证页面输入：</p>
+          <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-4 flex items-center justify-center gap-3">
+            <span id="deviceUserCodeText" class="text-2xl sm:text-3xl font-black font-mono tracking-widest text-indigo-400">--------</span>
+            <button onclick="copyElementText('deviceUserCodeText')" class="p-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded-xl transition" title="复制验证码">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <a id="deviceVerifyLink" href="https://login.microsoft.com/device" target="_blank" rel="noopener noreferrer" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition">
+          <span>点击打开微软授权页 (login.microsoft.com/device)</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+
+        <!-- Live polling indicator -->
+        <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-xl flex items-center gap-2.5 text-xs text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span>正在实时监听微软端授权状态... 完成后将自动同步并保存凭据。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PKCE Modal -->
+  <div id="pkceModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-slate-700/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white">标准 PKCE 授权接入</h3>
+        <button onclick="closePKCEModal()" class="text-slate-500 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">点击下方按钮前往微软登录，若无法自动跳转，可复制回调 URL 手动提交：</p>
+      <button onclick="startPKCEFlow()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+        开始 PKCE 授权跳转
+      </button>
+      <div class="space-y-1.5 pt-2">
+        <label class="text-xs text-slate-400">手动粘贴授权回调 URL</label>
+        <input id="pkceCallbackUrlInput" type="text" placeholder="http://localhost:4141/api/auth/callback?code=..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+        <button onclick="submitPKCECallback()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition mt-1.5">
+          解析并导入此回调凭据
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proxy Modal -->
+  <div id="proxyModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-slate-700/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white">绑定独立出网代理</h3>
+        <button onclick="closeProxyModal()" class="text-slate-500 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <input type="hidden" id="proxyModalAccountId" value="">
+      <p class="text-xs text-slate-400">为该账号指定专用的出网代理（支持 http, https, socks5），留空则使用全局直连。</p>
+      <div>
+        <input id="inputProxyUrl" type="text" placeholder="http://user:pass@127.0.0.1:7890 或 socks5://..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="submitBindProxy()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+          保存绑定
+        </button>
+        <button onclick="closeProxyModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Key Modal -->
+  <div id="createKeyModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-slate-700/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white">创建全新 API Key</h3>
+        <button onclick="closeCreateKeyModal()" class="text-slate-500 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400">Key 名称 / 用途备注</label>
+        <input id="inputKeyName" type="text" placeholder="例如：开发环境、NextChat 或 沉浸式翻译" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <button onclick="submitCreateKey()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+        立即生成密钥
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Created Success Modal -->
+  <div id="keyCreatedModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-emerald-500/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span>API Key 生成成功！</span>
+        </h3>
+        <button onclick="closeKeyCreatedModal()" class="text-slate-500 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-amber-300">请立即复制并妥善保存此 Key，为保障安全，关闭后将无法再次查看完整密钥明文！</p>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+        <input id="createdKeyRawInput" readonly type="text" class="bg-transparent text-emerald-300 text-xs font-mono flex-1 focus:outline-none" value="">
+        <button onclick="copyElementText('createdKeyRawInput')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition">复制</button>
+      </div>
+      <button onclick="closeKeyCreatedModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition">
+        我已复制并妥善保存
+      </button>
+    </div>
+  </div>
+
+  <!-- Fullscreen Login Overlay -->
+  <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-sm w-full p-6 rounded-3xl border border-slate-800 shadow-2xl space-y-5">
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/25">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h2 class="text-base font-bold text-white">管理员身份验证</h2>
+        <p class="text-xs text-slate-400">请输入 Copilot2API 管理控制台密码以继续访问</p>
+      </div>
+
+      <form onsubmit="doLogin(event)" class="space-y-3">
+        <input id="loginPasswordInput" type="password" required placeholder="输入管理访问密码" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 text-center tracking-wider">
+        <div id="loginErrorMsg" class="text-[11px] text-rose-400 text-center hidden"></div>
+        <button id="loginSubmitBtn" type="submit" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition">
+          验 证 并 进 入
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // State
+    let dashboardData = null;
+    let currentActiveTab = 'accounts';
+    let devicePollInterval = null;
+    let currentCategory = 'all';
+
+    // Toast
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-xl text-xs font-medium shadow-xl pointer-events-auto flex items-center gap-2 border transition transform duration-300 translate-y-2 opacity-0 ${
+        type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40' :
+        type === 'error' ? 'bg-rose-950/90 text-rose-300 border-rose-500/40' :
+        'bg-slate-900/90 text-slate-200 border-slate-700'
+      }`;
+      toast.innerText = message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function copyElementText(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.value !== undefined ? el.value : el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已成功复制到剪贴板！', 'success');
+      }).catch(() => {
+        showToast('复制失败，请手动选取复制', 'error');
+      });
+    }
+
+    // Tab Switching
+    function switchMainTab(tabId) {
+      currentActiveTab = tabId;
+      const tabs = ['accounts', 'access', 'analytics', 'playground', 'conversations', 'settings'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`mainTabBtn-${t}`);
+        const content = document.getElementById(`tabContent-${t}`);
+        if (t === tabId) {
+          if (btn) {
+            btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/25 transition whitespace-nowrap';
+          }
+          if (content) content.classList.remove('hidden');
+        } else {
+          if (btn) {
+            btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap';
+          }
+          if (content) content.classList.add('hidden');
+        }
+      });
+      if (tabId === 'conversations') {
+        loadConversations();
+      }
+    }
+
+    // Toggle Header Dropdown
+    function toggleHeaderAuthMenu() {
+      const menu = document.getElementById('headerAuthDropdown');
+      if (menu) menu.classList.toggle('hidden');
+    }
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('headerAuthDropdown');
+      const btn = document.getElementById('btnHeaderAuthMenu');
+      if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    // Refresh Data
+    async function refreshData() {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('animate-spin');
+      try {
+        const res = await fetch('/ui/data');
+        if (res.status === 401) {
+          document.getElementById('loginOverlay').classList.remove('hidden');
+          return;
+        }
+        if (!res.ok) {
+          console.error('Fetch /ui/data error:', res.status);
+          return;
+        }
+        document.getElementById('loginOverlay').classList.add('hidden');
+        dashboardData = await res.json();
+        renderDashboard();
+      } catch (err) {
+        console.error('Network error loading /ui/data:', err);
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    // Render Dashboard
+    function renderDashboard() {
+      if (!dashboardData) return;
+      const data = dashboardData;
+
+      // Warning banner
+      const banner = document.getElementById('unprotectedWarningBanner');
+      if (banner) {
+        if (!data.hasPassword) {
+          banner.classList.remove('hidden');
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+
+      // Metrics
+      const status = data.status || {};
+      document.getElementById('statTotal').innerText = status.total || 0;
+      document.getElementById('statHealthy').innerText = status.healthy || 0;
+      document.getElementById('statCooling').innerText = status.cooling || 0;
+      document.getElementById('statDisabled').innerText = status.disabled || 0;
+      document.getElementById('statModels').innerText = (data.models && data.models.length) || 32;
+      document.getElementById('statSessions').innerText = status.sticky_sessions || 0;
+
+      // Base URLs
+      const origin = window.location.origin;
+      const openaiUrl = `${origin}/v1`;
+      const anthropicUrl = `${origin}/v1`;
+      const openaiEl = document.getElementById('openaiBaseUrlInput');
+      const anthropicEl = document.getElementById('anthropicBaseUrlInput');
+      if (openaiEl) openaiEl.value = openaiUrl;
+      if (anthropicEl) anthropicEl.value = anthropicUrl;
+      const codeOpenAI = document.getElementById('codeSampleOpenAIBase');
+      const codeCurl = document.getElementById('codeSampleCurlBase');
+      if (codeOpenAI) codeOpenAI.innerText = openaiUrl;
+      if (codeCurl) codeCurl.innerText = openaiUrl;
+
+      // Render Accounts
+      renderAccounts();
+
+      // Render Keys
+      renderKeys();
+
+      // Render Models
+      renderModels();
+
+      // Render Logs
+      renderLogs();
+
+      // Populate Playground Select
+      populatePlaygroundModels();
+    }
+
+    // Render Accounts
+    function renderAccounts() {
+      const grid = document.getElementById('accountsGrid');
+      if (!grid || !dashboardData) return;
+      const accounts = dashboardData.accounts || [];
+      const search = (document.getElementById('searchAccountInput')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('filterStatusSelect')?.value || 'all';
+
+      const filtered = accounts.filter(acc => {
+        if (statusFilter === 'healthy' && acc.status !== 'healthy') return false;
+        if (statusFilter === 'cooling' && acc.status !== 'cooldown') return false;
+        if (statusFilter === 'disabled' && acc.status !== 'disabled') return false;
+        if (search) {
+          const email = (acc.email || '').toLowerCase();
+          const name = (acc.displayName || '').toLowerCase();
+          const tid = (acc.tid || '').toLowerCase();
+          const id = (acc.id || '').toLowerCase();
+          if (!email.includes(search) && !name.includes(search) && !tid.includes(search) && !id.includes(search)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500 glass-panel rounded-2xl border border-slate-800">
+            <svg class="w-10 h-10 mx-auto text-slate-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <p class="text-xs">暂无符合条件的 M365 账号资产</p>
+            <button onclick="openDeviceCodeModal()" class="mt-3 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 rounded-xl text-xs font-semibold transition">立即添加账号</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(acc => {
+        const isHealthy = acc.status === 'healthy';
+        const isCooling = acc.status === 'cooldown';
+        const isPaused = !acc.scheduleEnabled || acc.status === 'disabled';
+        const isAuthFailed = acc.authFailed || acc.status === 'auth_failed';
+
+        let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">正常运行</span>';
+        if (isAuthFailed) {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">鉴权失效</span>';
+        } else if (isCooling) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">限流退避 ${acc.cool_remaining_sec || 0}s</span>`;
+        } else if (isPaused) {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">调度暂停</span>';
+        }
+
+        const initial = (acc.displayName || acc.email || 'M').charAt(0).toUpperCase();
+
+        return `
+          <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 hover:border-slate-700 transition group">
+            <div class="space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600/40 to-purple-600/40 border border-indigo-500/30 flex items-center justify-center font-bold font-mono text-indigo-300">
+                    ${initial}
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-white max-w-[150px] truncate" title="${acc.displayName || acc.email}">${acc.displayName || acc.email}</h4>
+                    <p class="text-[11px] font-mono text-slate-400 max-w-[150px] truncate" title="${acc.email}">${acc.email}</p>
+                  </div>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <!-- Details -->
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 space-y-1.5 text-[11px] font-mono">
+                <div class="flex justify-between text-slate-400">
+                  <span>租户 ID:</span>
+                  <span class="text-slate-300 truncate max-w-[120px]" title="${acc.tid || ''}">${acc.tid ? acc.tid.slice(0, 10) + '...' : 'Global'}</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>累计调用:</span>
+                  <span class="text-indigo-400 font-semibold">${acc.callCount || 0} 次</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>当前并发:</span>
+                  <span class="text-emerald-400">${acc.concurrency || 0}</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>绑定代理:</span>
+                  <span class="text-slate-300 truncate max-w-[140px]" title="${acc.boundProxy || '直接出网'}">${acc.boundProxy ? '已绑定' : '直连出网'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="border-t border-slate-800 pt-3 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <button onclick="toggleAccountSchedule('${acc.id}', ${!acc.scheduleEnabled})" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+                  acc.scheduleEnabled ? 'bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }">
+                  ${acc.scheduleEnabled ? '暂停调度' : '恢复调度'}
+                </button>
+                <button onclick="openBindProxyModal('${acc.id}', '${acc.boundProxy || ''}')" class="px-2 py-1 bg-slate-800/80 hover:bg-slate-800 text-slate-300 rounded-lg text-[11px] transition">
+                  代理
+                </button>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button onclick="refreshAccountToken('${acc.id}')" title="刷新凭据" class="p-1.5 text-slate-400 hover:text-white transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+                <button onclick="deleteAccount('${acc.id}')" title="删除账号" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Keys
+    function renderKeys() {
+      const tbody = document.getElementById('keysTableBody');
+      const badge = document.getElementById('keysCountBadge');
+      if (!tbody || !dashboardData) return;
+      const keys = dashboardData.apiKeys || [];
+      if (badge) badge.innerText = keys.length;
+
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">暂无 API Key，请点击上方按钮创建密钥</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = keys.map(k => {
+        const isRevoked = !!k.revoked;
+        return `
+          <tr class="hover:bg-slate-800/20 transition">
+            <td class="py-3 px-3 text-white font-sans font-medium">${k.name || 'API Key'}</td>
+            <td class="py-3 px-3 text-indigo-400 font-mono">${k.prefix || 'sk-***'}...</td>
+            <td class="py-3 px-3">
+              ${isRevoked 
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 font-sans">已撤销</span>'
+                : '<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">生效中</span>'
+              }
+            </td>
+            <td class="py-3 px-3 text-slate-400 font-sans text-[11px]">${k.created_at ? new Date(k.created_at).toLocaleString() : '-'}</td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="toggleKeyStatus('${k.id}', ${!isRevoked})" class="text-xs text-slate-400 hover:text-white mr-3 transition font-sans">
+                ${isRevoked ? '重新启用' : '撤销'}
+              </button>
+              <button onclick="deleteKey('${k.id}')" class="text-xs text-slate-500 hover:text-rose-400 transition font-sans">
+                删除
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render Models
+    function renderModels() {
+      const grid = document.getElementById('modelsGrid');
+      if (!grid || !dashboardData) return;
+      const models = dashboardData.models || [];
+
+      const filtered = models.filter(m => {
+        const id = m.id.toLowerCase();
+        if (currentCategory === 'gpt6') return id.startsWith('gpt-6');
+        if (currentCategory === 'openai') return id.startsWith('gpt-4') || id.startsWith('o1') || id.startsWith('o3');
+        if (currentCategory === 'claude') return id.startsWith('claude');
+        if (currentCategory === 'draw') return id.includes('dall-e') || id.includes('flux');
+        return true;
+      });
+
+      grid.innerHTML = filtered.map(m => {
+        const id = m.id;
+        const isGPT6 = id.startsWith('gpt-6');
+        const isClaude = id.startsWith('claude');
+        const isReasoning = id.includes('reasoning') || id.startsWith('o1') || id.startsWith('o3') || id.includes('thinking');
+        const isDraw = id.includes('dall-e') || id.includes('flux');
+
+        let supplier = 'OpenAI';
+        if (isClaude) supplier = 'Anthropic';
+        else if (id.startsWith('copilot')) supplier = 'Microsoft';
+
+        return `
+          <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3.5 hover:border-slate-700 transition flex flex-col justify-between">
+            <div class="space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h4 class="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                    <span>${m.id}</span>
+                  </h4>
+                  <p class="text-[11px] text-slate-400 mt-0.5">${m.name || m.id}</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  supplier === 'Anthropic' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
+                  isGPT6 ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30' :
+                  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                }">${supplier}</span>
+              </div>
+
+              <!-- Tags -->
+              <div class="flex flex-wrap gap-1.5 pt-1 text-[10px] font-mono">
+                <span class="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400">上下文 128K</span>
+                ${isReasoning ? '<span class="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300">深度推理</span>' : ''}
+                ${isDraw ? '<span class="px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">图像生成</span>' : ''}
+                <span class="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400">原生流式</span>
+              </div>
+            </div>
+
+            <!-- Action -->
+            <div class="border-t border-slate-800 pt-3 flex items-center justify-between">
+              <span class="text-[10px] text-slate-500 font-mono">ChatHub 映射</span>
+              <button onclick="testModel('${m.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 rounded-lg text-[11px] font-medium transition flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>一键测通</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterModelsByCategory(category) {
+      currentCategory = category;
+      ['all', 'gpt6', 'openai', 'claude', 'draw'].forEach(c => {
+        const btn = document.getElementById(`modelFilterBtn-${c}`);
+        if (btn) {
+          if (c === category) {
+            btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition';
+          }
+        }
+      });
+      renderModels();
+    }
+
+    // Test Model
+    async function testModel(modelId) {
+      showToast(`正在发送测试请求到 ${modelId}...`, 'info');
+      try {
+        const res = await fetch('/api/admin/models/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelId, prompt: 'ping' })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`模型 ${modelId} 测通正常！响应耗时: ${data.latency_ms || 1200}ms`, 'success');
+        } else {
+          showToast(`模型测试失败: ${data.error?.message || '未知错误'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`网络请求异常: ${err}`, 'error');
+      }
+    }
+
+    // Render Logs
+    function renderLogs() {
+      const tbody = document.getElementById('logsTableBody');
+      if (!tbody || !dashboardData) return;
+      const logs = dashboardData.recentLogs || [];
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">暂无请求调用流水（调用网关接口后将在此实时呈现）</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logs.slice(0, 20).map(l => {
+        const isOk = l.status >= 200 && l.status < 300;
+        return `
+          <tr class="hover:bg-slate-800/20 transition">
+            <td class="py-2.5 px-3 text-slate-400">${l.at ? new Date(l.at).toLocaleTimeString() : '-'}</td>
+            <td class="py-2.5 px-3 text-indigo-400 font-bold">${l.method || 'POST'}</td>
+            <td class="py-2.5 px-3 text-slate-200">${l.path || '/v1/chat/completions'}</td>
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] ${isOk ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${l.status || 200}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right text-slate-300">${l.duration_ms || 0}ms</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Populate Playground Models
+    function populatePlaygroundModels() {
+      const select = document.getElementById('playModelSelect');
+      if (!select || !dashboardData) return;
+      const models = dashboardData.models || [];
+      const current = select.value;
+      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id} (${m.name || m.id})</option>`).join('');
+      if (current) select.value = current;
+      else if (models.some(m => m.id === 'gpt-6.1')) select.value = 'gpt-6.1';
+    }
+
+    // Playground Chat
+    async function sendPlaygroundChat() {
+      const model = document.getElementById('playModelSelect').value;
+      const system = document.getElementById('playSystemPrompt').value.trim();
+      const user = document.getElementById('playUserPrompt').value.trim();
+      const stream = document.getElementById('playStreamToggle').checked;
+      const resBox = document.getElementById('playResponseBox');
+      const btn = document.getElementById('btnPlaygroundSend');
+      const latencyBadge = document.getElementById('playLatencyBadge');
+
+      if (!user) {
+        showToast('请输入测试问题', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      resBox.innerText = '正在连接微软 ChatHub 原生 WebSocket 服务并生成中...';
+      const startTime = performance.now();
+
+      const messages = [];
+      if (system) messages.push({ role: 'system', content: system });
+      messages.push({ role: 'user', content: user });
+
+      try {
+        const res = await fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer admin'
+          },
+          body: JSON.stringify({ model, messages, stream })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          resBox.innerText = `请求失败 [HTTP ${res.status}]:\n${JSON.stringify(err, null, 2)}`;
+          return;
+        }
+
+        if (stream) {
+          resBox.innerText = '';
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith('data: ')) {
+                const jsonStr = trimmed.slice(6);
+                if (jsonStr === '[DONE]') break;
+                try {
+                  const chunk = JSON.parse(jsonStr);
+                  const content = chunk.choices?.[0]?.delta?.content || '';
+                  resBox.innerText += content;
+                  resBox.scrollTop = resBox.scrollHeight;
+                } catch (e) {}
+              }
+            }
+          }
+        } else {
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2);
+          resBox.innerText = text;
+        }
+
+        const duration = Math.round(performance.now() - startTime);
+        if (latencyBadge) {
+          latencyBadge.innerText = `总耗时: ${duration}ms`;
+          latencyBadge.classList.remove('hidden');
+        }
+      } catch (err) {
+        resBox.innerText = `网络异常: ${err}`;
+      } finally {
+        btn.disabled = false;
+        refreshData();
+      }
+    }
+
+    function copyPlaygroundOutput() {
+      const box = document.getElementById('playResponseBox');
+      if (!box) return;
+      navigator.clipboard.writeText(box.innerText).then(() => {
+        showToast('已复制调试输出！', 'success');
+      });
+    }
+
+    // Conversations
+    async function loadConversations() {
+      const tbody = document.getElementById('conversationsTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">正在加载活跃会话...</td></tr>';
+      try {
+        const res = await fetch('/api/m365/conversations');
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">暂无活跃会话</td></tr>';
+          return;
+        }
+        const data = await res.json();
+        const list = data.conversations || [];
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">暂无活跃会话记录</td></tr>';
+          return;
+        }
+        tbody.innerHTML = list.map(c => `
+          <tr class="hover:bg-slate-800/20 transition">
+            <td class="py-3 px-3 text-indigo-400 font-mono">${c.id}</td>
+            <td class="py-3 px-3 text-slate-300 font-sans">${c.account_id || '-'}</td>
+            <td class="py-3 px-3 text-slate-400">${c.messages_count || 1}</td>
+            <td class="py-3 px-3 text-slate-400">${c.updated_at ? new Date(c.updated_at).toLocaleTimeString() : '-'}</td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="deleteConversation('${c.id}')" class="text-xs text-rose-400 hover:text-rose-300 transition font-sans">销毁会话</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-rose-400 font-sans">加载失败: ${err}</td></tr>`;
+      }
+    }
+
+    async function deleteConversation(id) {
+      if (!confirm(`确定销毁该会话 (${id}) 吗？`)) return;
+      try {
+        await fetch('/api/m365/conversations/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        showToast('会话已销毁', 'success');
+        loadConversations();
+      } catch (err) {
+        showToast(`操作失败: ${err}`, 'error');
+      }
+    }
+
+    async function cleanupAllConversations() {
+      if (!confirm('确定清空全部缓存会话吗？')) return;
+      try {
+        await fetch('/api/m365/conversations/cleanup', { method: 'POST' });
+        showToast('已清空全部会话缓存', 'success');
+        loadConversations();
+      } catch (err) {
+        showToast(`操作失败: ${err}`, 'error');
+      }
+    }
+
+    // Device Code Flow
+    async function openDeviceCodeModal() {
+      document.getElementById('deviceCodeModal').classList.remove('hidden');
+      document.getElementById('deviceStateLoading').classList.remove('hidden');
+      document.getElementById('deviceStateReady').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/device/start', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(`获取设备码失败: ${data.error || '未知错误'}`, 'error');
+          closeDeviceCodeModal();
+          return;
+        }
+
+        document.getElementById('deviceUserCodeText').innerText = data.user_code;
+        document.getElementById('deviceVerifyLink').href = data.verification_uri || 'https://login.microsoft.com/device';
+        document.getElementById('deviceStateLoading').classList.add('hidden');
+        document.getElementById('deviceStateReady').classList.remove('hidden');
+
+        // Start Polling
+        startDeviceCodePolling(data.device_code);
+      } catch (err) {
+        showToast(`网络请求异常: ${err}`, 'error');
+        closeDeviceCodeModal();
+      }
+    }
+
+    function closeDeviceCodeModal() {
+      document.getElementById('deviceCodeModal').classList.add('hidden');
+      if (devicePollInterval) {
+        clearInterval(devicePollInterval);
+        devicePollInterval = null;
+      }
+    }
+
+    function startDeviceCodePolling(deviceCode) {
+      if (devicePollInterval) clearInterval(devicePollInterval);
+      devicePollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/auth/device/poll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_code: deviceCode })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            clearInterval(devicePollInterval);
+            devicePollInterval = null;
+            closeDeviceCodeModal();
+            showToast(`M365 账号 ${data.account?.email || ''} 授权成功并成功入库！`, 'success');
+            refreshData();
+          } else if (data.status === 'error') {
+            clearInterval(devicePollInterval);
+            devicePollInterval = null;
+            showToast(`授权失败或超时: ${data.error}`, 'error');
+          }
+        } catch (e) {}
+      }, 3000);
+    }
+
+    // PKCE Flow
+    function openPKCEModal() {
+      document.getElementById('pkceModal').classList.remove('hidden');
+    }
+    function closePKCEModal() {
+      document.getElementById('pkceModal').classList.add('hidden');
+    }
+    async function startPKCEFlow() {
+      try {
+        const res = await fetch('/api/auth/start', { method: 'POST' });
+        const data = await res.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+        } else {
+          showToast('获取 PKCE 链接失败', 'error');
+        }
+      } catch (e) {
+        showToast(`请求异常: ${e}`, 'error');
+      }
+    }
+    async function submitPKCECallback() {
+      const url = document.getElementById('pkceCallbackUrlInput').value.trim();
+      if (!url) {
+        showToast('请输入回调 URL', 'error');
+        return;
+      }
+      try {
+        const u = new URL(url);
+        const code = u.searchParams.get('code');
+        const state = u.searchParams.get('state');
+        if (!code) {
+          showToast('回调 URL 中未找到 code 参数', 'error');
+          return;
+        }
+        const res = await fetch(`/api/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`);
+        if (res.ok) {
+          showToast('PKCE 授权凭据导入成功！', 'success');
+          closePKCEModal();
+          refreshData();
+        } else {
+          showToast('导入失败，请检查 code 是否有效或过期', 'error');
+        }
+      } catch (err) {
+        showToast(`解析失败: ${err}`, 'error');
+      }
+    }
+
+    // Account Actions
+    async function toggleAccountSchedule(id, enabled) {
+      try {
+        await fetch('/api/accounts/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, enabled })
+        });
+        showToast(`账号调度状态已更新`, 'success');
+        refreshData();
+      } catch (e) {
+        showToast(`更新失败: ${e}`, 'error');
+      }
+    }
+
+    async function refreshAccountToken(id) {
+      showToast('正在向微软刷新访问凭据...', 'info');
+      try {
+        const res = await fetch('/api/accounts/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+          showToast('账号凭据刷新成功！', 'success');
+          refreshData();
+        } else {
+          showToast('刷新失败', 'error');
+        }
+      } catch (e) {
+        showToast(`刷新异常: ${e}`, 'error');
+      }
+    }
+
+    async function deleteAccount(id) {
+      if (!confirm('确定彻底删除该 M365 账号资产吗？')) return;
+      try {
+        await fetch('/api/accounts/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        showToast('账号已安全移除', 'success');
+        refreshData();
+      } catch (e) {
+        showToast(`删除失败: ${e}`, 'error');
+      }
+    }
+
+    async function clearAllCooldowns() {
+      try {
+        await fetch('/api/accounts/clear-cooldown', { method: 'POST' });
+        showToast('已一键清除全部限流冷却，所有就绪账号恢复调度！', 'success');
+        refreshData();
+      } catch (e) {
+        showToast(`操作失败: ${e}`, 'error');
+      }
+    }
+
+    // Proxy Modal
+    function openBindProxyModal(accountId, currentProxy) {
+      document.getElementById('proxyModalAccountId').value = accountId;
+      document.getElementById('inputProxyUrl').value = currentProxy;
+      document.getElementById('proxyModal').classList.remove('hidden');
+    }
+    function closeProxyModal() {
+      document.getElementById('proxyModal').classList.add('hidden');
+    }
+    async function submitBindProxy() {
+      const id = document.getElementById('proxyModalAccountId').value;
+      const proxyUrl = document.getElementById('inputProxyUrl').value.trim();
+      try {
+        const res = await fetch('/api/accounts/bind-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, proxyUrl })
+        });
+        if (res.ok) {
+          showToast('代理绑定成功！', 'success');
+          closeProxyModal();
+          refreshData();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(`绑定失败: ${err.error?.message || '无效代理 URL'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`网络异常: ${e}`, 'error');
+      }
+    }
+
+    // Key Modals
+    function openCreateKeyModal() {
+      document.getElementById('inputKeyName').value = '';
+      document.getElementById('createKeyModal').classList.remove('hidden');
+    }
+    function closeCreateKeyModal() {
+      document.getElementById('createKeyModal').classList.add('hidden');
+    }
+    function closeKeyCreatedModal() {
+      document.getElementById('keyCreatedModal').classList.add('hidden');
+    }
+    async function submitCreateKey() {
+      const name = document.getElementById('inputKeyName').value.trim() || 'API Key';
+      try {
+        const res = await fetch('/api/admin/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeCreateKeyModal();
+          document.getElementById('createdKeyRawInput').value = data.key || '';
+          document.getElementById('keyCreatedModal').classList.remove('hidden');
+          refreshData();
+        } else {
+          showToast(`生成 Key 失败: ${data.error?.message || '未知错误'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`请求异常: ${e}`, 'error');
+      }
+    }
+
+    async function toggleKeyStatus(id, revoked) {
+      try {
+        await fetch('/api/admin/keys', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, revoked })
+        });
+        showToast('Key 状态已更新', 'success');
+        refreshData();
+      } catch (e) {
+        showToast(`操作失败: ${e}`, 'error');
+      }
+    }
+
+    async function deleteKey(id) {
+      if (!confirm('确定彻底删除该 API Key 吗？关联客户端将无法继续访问！')) return;
+      try {
+        await fetch(`/api/admin/keys?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        showToast('API Key 已删除', 'success');
+        refreshData();
+      } catch (e) {
+        showToast(`删除失败: ${e}`, 'error');
+      }
+    }
+
+    // Change Password
+    function openChangePasswordModal() {
+      switchMainTab('settings');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    async function doChangePassword(e) {
+      e.preventDefault();
+      const current_password = document.getElementById('inputOldPassword').value;
+      const new_password = document.getElementById('inputNewPassword').value;
+      const confirm = document.getElementById('inputConfirmPassword').value;
+
+      if (new_password !== confirm) {
+        showToast('两次输入的新密码不一致', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_password, new_password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('管理密码修改成功！请重新登录', 'success');
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          showToast(`修改失败: ${data.error?.message || data.error || '密码不符合复杂度要求'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`请求失败: ${err}`, 'error');
+      }
+    }
+
+    // Login / Logout
+    async function doLogin(e) {
+      e.preventDefault();
+      const password = document.getElementById('loginPasswordInput').value;
+      const errEl = document.getElementById('loginErrorMsg');
+      const btn = document.getElementById('loginSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = '验证中...';
+      errEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'authenticated') {
+          document.getElementById('loginOverlay').classList.add('hidden');
+          showToast('登录成功！欢迎进入控制台', 'success');
+          refreshData();
+        } else {
+          errEl.innerText = data.error?.message || '密码错误，请重试';
+          errEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errEl.innerText = '网络异常: ' + err;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '验 证 并 进 入';
+      }
+    }
+
+    async function doLogout() {
+      if (!confirm('确定退出当前管理控制台会话吗？')) return;
+      try {
+        await fetch('/api/admin/logout', { method: 'POST' });
+        location.reload();
+      } catch (e) {
+        location.reload();
+      }
+    }
+
+    // Init
+    refreshData();
+    setInterval(refreshData, 8000);
+  </script>
+</body>
+</html>

@@ -568,6 +568,7 @@ func (s *Server) Routes() http.Handler {
 	m.HandleFunc("/v1/memory/settings", s.handleMemorySettings)
 	// Public status and portal routes
 	m.HandleFunc("/ui/public/status", s.handlePublicStatus)
+	m.HandleFunc("/ui/data", s.handleUIData)
 	m.HandleFunc("/portal", s.portalPage)
 	m.HandleFunc("/console", s.consolePage)
 	m.HandleFunc("/console/", s.consolePage)
@@ -591,7 +592,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/api/auth/device/start" || r.URL.Path == "/api/auth/device/poll" || r.URL.Path == "/" || r.URL.Path == "/login" || r.URL.Path == "/portal" || r.URL.Path == "/console" || r.URL.Path == "/console/" || r.URL.Path == "/dashboard" || r.URL.Path == "/dashboard/" || r.URL.Path == "/ui/public/status" {
+		if r.URL.Path == "/api/admin/login" || r.URL.Path == "/api/admin/session" || r.URL.Path == "/api/admin/change-password" || r.URL.Path == "/api/admin/logout" || r.URL.Path == "/api/auth/start" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/callback" || r.URL.Path == "/api/auth/device/start" || r.URL.Path == "/api/auth/device/poll" || r.URL.Path == "/" || r.URL.Path == "/login" || r.URL.Path == "/portal" || r.URL.Path == "/console" || r.URL.Path == "/console/" || r.URL.Path == "/dashboard" || r.URL.Path == "/dashboard/" || r.URL.Path == "/ui/public/status" || r.URL.Path == "/ui/data" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -3811,6 +3812,164 @@ func (s *Server) handlePublicStatus(w http.ResponseWriter, r *http.Request) {
 		"status":       "online",
 		"models_count": len(modelCatalog()),
 		"accounts":     accCount,
+	})
+}
+
+func (s *Server) handleUIData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		writeOpenAIError(w, http.StatusMethodNotAllowed, "invalid_request_error", "method not allowed")
+		return
+	}
+	hasPassword := s.adminPassword != ""
+	authenticated := s.validAdminSession(r)
+
+	if hasPassword && !authenticated {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"error":       "administrator login required",
+			"need_login":  true,
+			"hasPassword": true,
+		})
+		return
+	}
+
+	var list []auth.AccountToken
+	if s.tokens != nil {
+		list = s.tokens.List()
+	}
+
+	type accountView struct {
+		ID               string     `json:"id"`
+		Email            string     `json:"email"`
+		DisplayName      string     `json:"displayName,omitempty"`
+		Status           string     `json:"status"`
+		ScheduleEnabled  bool       `json:"scheduleEnabled"`
+		WebSearchEnabled bool       `json:"webSearchEnabled"`
+		SystemPrompt     string     `json:"systemPrompt,omitempty"`
+		CallCount        uint64     `json:"callCount"`
+		RateLimited      bool       `json:"rateLimited"`
+		ImageLimited     bool       `json:"imageLimited"`
+		AuthFailed       bool       `json:"authFailed"`
+		AuthFailReason   string     `json:"authFailReason,omitempty"`
+		CooldownUntil    *time.Time `json:"cooldownUntil,omitempty"`
+		CoolRemainingSec int64      `json:"cool_remaining_sec,omitempty"`
+		Concurrency      int        `json:"concurrency"`
+		OID              string     `json:"oid,omitempty"`
+		TID              string     `json:"tid,omitempty"`
+		ExpiresAt        time.Time  `json:"expiresAt,omitempty"`
+		UpdatedAt        time.Time  `json:"updatedAt,omitempty"`
+		BoundProxy       string     `json:"boundProxy,omitempty"`
+	}
+
+	accounts := make([]accountView, 0, len(list))
+	healthyCount := 0
+	coolingCount := 0
+	disabledCount := 0
+
+	for _, a := range list {
+		status := a.Status
+		var cooldownUntil *time.Time
+		var coolRemaining int64
+		var callCount uint64
+		var rateLimited bool
+		var authFailReason string
+		var imageLimited bool
+
+		if s.accountPool != nil {
+			if until, ok := s.accountPool.CooldownUntil(a.ID); ok {
+				status = "cooldown"
+				cooldownUntil = &until
+				rem := time.Until(until).Seconds()
+				if rem > 0 {
+					coolRemaining = int64(rem)
+				}
+			}
+			callCount = s.accountPool.CallCount(a.ID)
+			rateLimited = s.accountPool.RateLimited(a.ID)
+			authFailReason = s.accountPool.AuthFailReason(a.ID)
+			imageLimited = s.accountPool.ImageLimited(a.ID)
+		}
+
+		isAuthFailed := s.accountPool != nil && !s.accountPool.Available(a.ID) && authFailReason != ""
+		if isAuthFailed {
+			status = "auth_failed"
+		} else if a.ScheduleDisabled {
+			status = "disabled"
+			disabledCount++
+		} else if cooldownUntil != nil {
+			coolingCount++
+		} else {
+			if status == "" {
+				status = "healthy"
+			}
+			healthyCount++
+		}
+
+		var concurrency int
+		if s.accountConcurrency != nil {
+			concurrency = s.accountConcurrency.Inflight(a.ID)
+		}
+
+		accounts = append(accounts, accountView{
+			ID:               a.ID,
+			Email:            a.Email,
+			DisplayName:      a.DisplayName,
+			Status:           status,
+			ScheduleEnabled:  !a.ScheduleDisabled,
+			WebSearchEnabled: !a.WebSearchDisabled,
+			SystemPrompt:     a.SystemPrompt,
+			CallCount:        callCount,
+			RateLimited:      rateLimited,
+			ImageLimited:     imageLimited,
+			AuthFailed:       isAuthFailed,
+			AuthFailReason:   authFailReason,
+			CooldownUntil:    cooldownUntil,
+			CoolRemainingSec: coolRemaining,
+			Concurrency:      concurrency,
+			OID:              a.OID,
+			TID:              a.TID,
+			ExpiresAt:        a.ExpiresAt,
+			UpdatedAt:        a.UpdatedAt,
+			BoundProxy:       a.BoundProxy,
+		})
+	}
+
+	models := modelCatalog()
+	keys := s.apiKeys.list()
+	cacheSnap := cacheStats.GetStats()
+	convStats := s.convCache.Stats()
+	debugRecords := s.debug.list()
+
+	s.mu.Lock()
+	mustChange := s.mustChangePassword
+	s.mu.Unlock()
+
+	_, dockerEnvErr := os.Stat("/.dockerenv")
+	isDocker := os.Getenv("M365_DATA_DIR") != "" || dockerEnvErr == nil
+
+	jsonOut(w, map[string]any{
+		"service": "Copilot2API",
+		"status": map[string]any{
+			"total":           len(accounts),
+			"healthy":         healthyCount,
+			"cooling":         coolingCount,
+			"disabled":        disabledCount,
+			"models_count":    len(models),
+			"sticky_sessions": convStats["active_sessions"],
+		},
+		"accounts":       accounts,
+		"models":         models,
+		"apiKeys":        keys,
+		"hasPassword":    hasPassword,
+		"mustChangePw":   mustChange,
+		"currentVersion": Version,
+		"isDocker":       isDocker,
+		"stats": map[string]any{
+			"cache": cacheSnap,
+			"conv":  convStats,
+		},
+		"recentLogs": debugRecords,
 	})
 }
 

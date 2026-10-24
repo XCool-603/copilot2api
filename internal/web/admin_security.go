@@ -128,7 +128,10 @@ func loadAdminCredentials() (string, []string, bool, error) {
 					auditLog(nil, "admin_password_override_default", "env overrides persisted default")
 					return h, data.History, false, nil
 				}
-				return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+				if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+					return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+				}
+				return data.Hash, data.History, true, nil
 			}
 			return data.Hash, data.History, false, nil
 		}
@@ -143,7 +146,11 @@ func loadAdminCredentials() (string, []string, bool, error) {
 				auditLog(nil, "admin_password_override_default", "env overrides persisted plain default")
 				return h, nil, false, nil
 			}
-			return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+			if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+				return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+			}
+			h, _ := hashPassword(defaultAdminPassword)
+			return h, nil, true, nil
 		}
 		if plain != "" {
 			h, _ := hashPassword(plain)
@@ -165,14 +172,21 @@ func loadAdminCredentials() (string, []string, bool, error) {
 					auditLog(nil, "admin_password_override_default", "env overrides legacy default")
 					return h, nil, false, nil
 				}
-				return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+				if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+					return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+				}
+				h, _ := hashPassword(defaultAdminPassword)
+				return h, nil, true, nil
 			}
 			if plain != "" {
 				// check if it's already json (when env file is plain path but contains json)
 				var data adminPasswordData
 				if err := json.Unmarshal(b, &data); err == nil && data.Hash != "" {
 					if checkPassword(data.Hash, defaultAdminPassword) {
-						return "", nil, false, errors.New("default administrator password is not allowed")
+						if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+							return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+						}
+						return data.Hash, data.History, true, nil
 					}
 					return data.Hash, data.History, false, nil
 				}
@@ -196,7 +210,11 @@ func loadAdminCredentials() (string, []string, bool, error) {
 	}
 	if p := strings.TrimSpace(os.Getenv("M365_ADMIN_PASSWORD")); p != "" {
 		if p == defaultAdminPassword {
-			return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+			if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+				return "", nil, false, errors.New("default administrator password is not allowed; set M365_ADMIN_PASSWORD to a strong password")
+			}
+			h, _ := hashPassword(defaultAdminPassword)
+			return h, nil, true, nil
 		}
 		h, err := hashPassword(p)
 		if err != nil {
