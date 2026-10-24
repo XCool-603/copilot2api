@@ -2492,7 +2492,7 @@ func (s *Server) openaiChat(w http.ResponseWriter, r *http.Request) {
 	// path forwards ordinary upstream text deltas immediately; tool routing for
 	// non-streaming requests remains below until the event-level tool protocol
 	// is available end-to-end.
-	if planningMode == "router" && body.Stream && len(toolMaps) > 0 && fmt.Sprint(body.ToolChoice) != "none" {
+	if len(toolMaps) > 0 && body.Stream && fmt.Sprint(body.ToolChoice) != "none" {
 		// Preserve the existing validated tool router for streaming tool turns.
 		// Only fall through to text streaming when the router explicitly selects
 		// no tool; this prevents a natural-language preamble from becoming a
@@ -2942,7 +2942,7 @@ func (s *Server) openaiChat(w http.ResponseWriter, r *http.Request) {
 	}
 	// Ask the upstream model to select and validate the next tool. The gateway
 	// remains tool-agnostic; it only validates and serializes the decision.
-	if planningMode == "router" && len(toolMaps) > 0 && fmt.Sprint(body.ToolChoice) != "none" {
+	if len(toolMaps) > 0 && fmt.Sprint(body.ToolChoice) != "none" {
 		routePrompt := modelToolRouterPrompt(answerPrompt+"\n"+ledger.RouterContext(), toolMaps, body.ToolChoice)
 		routeRes, routeErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: routePrompt, Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
 		if routeErr != nil {
