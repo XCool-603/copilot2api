@@ -597,11 +597,11 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		if strings.HasPrefix(r.URL.Path, "/v1/") {
-			if !s.validAPIKey(r) {
-				writeOpenAIError(w, http.StatusUnauthorized, "auth_error", "valid API key required")
+			if r.URL.Path == "/v1/models" || s.validAPIKey(r) || s.validAdminSession(r) {
+				next.ServeHTTP(w, r)
 				return
 			}
-			next.ServeHTTP(w, r)
+			writeOpenAIError(w, http.StatusUnauthorized, "auth_error", "valid API key required")
 			return
 		}
 		if s.adminPassword == "" {

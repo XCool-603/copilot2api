@@ -336,15 +336,139 @@
         <!-- Category Filters -->
         <div class="mt-8 flex flex-wrap justify-center gap-2">
           <button onclick="filterModelCategory('all')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-cyan-500 text-slate-950 transition" data-cat="all">全部模型</button>
-          <button onclick="filterModelCategory('flagship')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="flagship">旗舰基座 (Flagship)</button>
-          <button onclick="filterModelCategory('claude')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="claude">Anthropic 协议 (Claude)</button>
+          <button onclick="filterModelCategory('gpt6')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="gpt6">GPT-6 次世代系列</button>
+          <button onclick="filterModelCategory('flagship')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="flagship">GPT-4o 旗舰</button>
+          <button onclick="filterModelCategory('claude')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="claude">Anthropic 协议 (Claude 3.7/3.5)</button>
           <button onclick="filterModelCategory('business')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="business">商业增强 (Business)</button>
-          <button onclick="filterModelCategory('image')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="image">多模态生成 (DALL-E)</button>
+          <button onclick="filterModelCategory('image')" class="model-cat-btn px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" data-cat="image">多模态生成 (DALL-E / Flux)</button>
         </div>
       </div>
 
       <!-- Models Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- GPT-6.1 -->
+        <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="gpt6">
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center font-bold text-xs">6.1</div>
+                <h4 class="text-base font-bold text-white">GPT-6.1 (次世代全能旗舰)</h4>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30">NextGen 顶配</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 leading-relaxed">
+              OpenAI / 微软 M365 下一代超级智能基座，具备超长多跳逻辑推演、深度代码构建与复杂多模态理解。
+            </p>
+            <div class="mt-4 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-indigo-300">200K 上下文</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">原生流式</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-emerald-400">Function Calling</span>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">模型 ID:</span>
+            <span class="text-cyan-400 font-semibold cursor-pointer hover:underline" onclick="copyText('gpt-6.1')">gpt-6.1</span>
+          </div>
+        </div>
+
+        <!-- GPT-6.1 Reasoning -->
+        <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="gpt6">
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs">6.1R</div>
+                <h4 class="text-base font-bold text-white">GPT-6.1 Reasoning (长链思维思考)</h4>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">深度思考</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 leading-relaxed">
+              内建高阶思维链 (Thinking Chain)，专门攻克高难度数学建模、算法竞赛与高级软件架构设计。
+            </p>
+            <div class="mt-4 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-purple-300">思维链输出</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-indigo-300">极限逻辑</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">200K 上下文</span>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">模型 ID:</span>
+            <span class="text-cyan-400 font-semibold cursor-pointer hover:underline" onclick="copyText('gpt-6.1-reasoning')">gpt-6.1-reasoning</span>
+          </div>
+        </div>
+
+        <!-- GPT-6.0 -->
+        <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="gpt6">
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">6.0</div>
+                <h4 class="text-base font-bold text-white">GPT-6.0 (次世代通用基座)</h4>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">GPT-6 基座</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 leading-relaxed">
+              GPT-6 基础标准版，兼顾超高响应速率与强悍的多领域知识沉淀，适用于通用日常对话与复杂问答。
+            </p>
+            <div class="mt-4 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300">128K 上下文</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-blue-400">极速响应</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">低延迟</span>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">模型 ID:</span>
+            <span class="text-cyan-400 font-semibold cursor-pointer hover:underline" onclick="copyText('gpt-6.0')">gpt-6.0</span>
+          </div>
+        </div>
+
+        <!-- GPT-6.0 Reasoning -->
+        <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="gpt6">
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs">6.0R</div>
+                <h4 class="text-base font-bold text-white">GPT-6.0 Reasoning (推理增强)</h4>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">深度思考</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 leading-relaxed">
+              GPT-6.0 深度推理版本，在逻辑严密性与科学严谨度上大幅超越传统模型。
+            </p>
+            <div class="mt-4 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-purple-300">思维推理</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-400">128K 上下文</span>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">模型 ID:</span>
+            <span class="text-cyan-400 font-semibold cursor-pointer hover:underline" onclick="copyText('gpt-6.0-reasoning')">gpt-6.0-reasoning</span>
+          </div>
+        </div>
+
+        <!-- GPT-6 Astra -->
+        <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="gpt6">
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-xs">AST</div>
+                <h4 class="text-base font-bold text-white">GPT-6 Astra (多模态图文)</h4>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">多模态</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 leading-relaxed">
+              专攻复杂长文档图表分析、跨模态交互与实时视觉感知推断的次世代多模态大模型。
+            </p>
+            <div class="mt-4 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-pink-300">视觉图文</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800/80 text-indigo-300">高维理解</span>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">模型 ID:</span>
+            <span class="text-cyan-400 font-semibold cursor-pointer hover:underline" onclick="copyText('gpt-6-astra')">gpt-6-astra</span>
+          </div>
+        </div>
+
         <!-- GPT-4o -->
         <div class="model-card glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between transition-all" data-category="flagship">
           <div>
