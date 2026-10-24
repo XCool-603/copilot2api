@@ -1605,6 +1605,10 @@ type responseFormat struct {
 func modelTone(model string) string {
 	m := strings.ToLower(strings.TrimSpace(model))
 	switch m {
+	case "deepseek-chat", "deepseek-coder", "deepseek-v3":
+		return "Gpt_5_4_Chat"
+	case "deepseek-reasoner", "deepseek-r1":
+		return "Gpt_5_6_Reasoning"
 	case "gpt-6.1", "gpt-6.0", "gpt-6", "gpt-6-astra":
 		return "Gpt_5_5_Chat"
 	case "gpt-6.1-reasoning", "gpt-6.0-reasoning", "gpt-6-reasoning":

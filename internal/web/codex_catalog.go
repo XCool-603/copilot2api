@@ -69,6 +69,12 @@ var gatewayModels = []modelSpec{
 	{ID: "gpt-6", Owner: "openai-via-m365", DisplayName: "GPT-6", Tools: true},
 	{ID: "gpt-6-reasoning", Owner: "openai-via-m365", DisplayName: "GPT-6 Reasoning", Tools: true, DefaultReasoningLevel: "high"},
 	{ID: "gpt-6-astra", Owner: "openai-via-m365", DisplayName: "GPT-6 Astra", Tools: true},
+	// DeepSeek Series Models
+	{ID: "deepseek-chat", Owner: "deepseek-via-m365", DisplayName: "DeepSeek V3 (Chat)", Tools: true},
+	{ID: "deepseek-coder", Owner: "deepseek-via-m365", DisplayName: "DeepSeek Coder", Tools: true},
+	{ID: "deepseek-reasoner", Owner: "deepseek-via-m365", DisplayName: "DeepSeek R1 (Reasoner)", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "deepseek-v3", Owner: "deepseek-via-m365", DisplayName: "DeepSeek V3", Tools: true},
+	{ID: "deepseek-r1", Owner: "deepseek-via-m365", DisplayName: "DeepSeek R1", Tools: true, DefaultReasoningLevel: "high"},
 	// Standard Industry Models
 	{ID: "gpt-4o", Owner: "openai-via-m365", DisplayName: "GPT-4o (Omni)", Tools: true},
 	{ID: "gpt-4o-mini", Owner: "openai-via-m365", DisplayName: "GPT-4o Mini", Tools: true},
@@ -316,6 +322,10 @@ func reasoningTone(model, effort string) (string, error) {
 		return base, nil
 	}
 	switch strings.ToLower(strings.TrimSpace(model)) {
+	case "deepseek-reasoner", "deepseek-r1":
+		return "Gpt_5_6_Reasoning", nil
+	case "deepseek-chat", "deepseek-coder", "deepseek-v3":
+		return "Gpt_5_4_Reasoning", nil
 	case "gpt-6.1", "gpt-6.1-reasoning":
 		return "Gpt_5_6_Reasoning", nil
 	case "gpt-6.0", "gpt-6.0-reasoning", "gpt-6", "gpt-6-reasoning", "gpt-6-astra":

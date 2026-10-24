@@ -54,6 +54,59 @@ func fencedToolCalls(text string, tools []map[string]any, choice any) []detected
 			}
 			continue
 		}
+		// Support models emitting ```json {"name": "read_file", "arguments": {...}} or ```tool_call
+		if name == "json" || name == "tool_call" || name == "tool_calls" {
+			if m, ok := v.(map[string]any); ok {
+				toolName, _ := m["name"].(string)
+				if toolName == "" {
+					toolName, _ = m["tool"].(string)
+				}
+				if toolName == "" {
+					toolName, _ = m["function"].(string)
+				}
+				if toolName != "" && allowed[toolName] && toolChoiceAllows(choice, toolName) {
+					var argBytes []byte
+					if argsVal, hasArgs := m["arguments"]; hasArgs {
+						if argStr, isStr := argsVal.(string); isStr {
+							argBytes = []byte(argStr)
+						} else {
+							argBytes, _ = json.Marshal(argsVal)
+						}
+					} else if paramsVal, hasParams := m["parameters"]; hasParams {
+						argBytes, _ = json.Marshal(paramsVal)
+					} else {
+						argBytes, _ = json.Marshal(m)
+					}
+					out = append(out, detectedToolCall{ID: callID(toolName, string(argBytes), len(out)), Type: toolType(toolName, tools), Name: toolName, Arguments: argBytes})
+					continue
+				}
+			}
+			if arr, ok := v.([]any); ok {
+				matched := false
+				for _, item := range arr {
+					if m, ok := item.(map[string]any); ok {
+						toolName, _ := m["name"].(string)
+						if toolName != "" && allowed[toolName] && toolChoiceAllows(choice, toolName) {
+							var argBytes []byte
+							if argsVal, hasArgs := m["arguments"]; hasArgs {
+								if argStr, isStr := argsVal.(string); isStr {
+									argBytes = []byte(argStr)
+								} else {
+									argBytes, _ = json.Marshal(argsVal)
+								}
+							} else {
+								argBytes, _ = json.Marshal(m)
+							}
+							out = append(out, detectedToolCall{ID: callID(toolName, string(argBytes), len(out)), Type: toolType(toolName, tools), Name: toolName, Arguments: argBytes})
+							matched = true
+						}
+					}
+				}
+				if matched {
+					continue
+				}
+			}
+		}
 		if !allowed[name] || !toolChoiceAllows(choice, name) {
 			continue
 		}

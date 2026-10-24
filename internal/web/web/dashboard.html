@@ -478,7 +478,8 @@ print(response.choices[0].message.content)</pre>
       <!-- Filter Bar -->
       <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll max-w-full pb-1 sm:pb-0">
-          <button onclick="filterModelsByCategory('all')" id="modelFilterBtn-all" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition">全部模型 (32)</button>
+          <button onclick="filterModelsByCategory('all')" id="modelFilterBtn-all" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition">全部模型 (37)</button>
+          <button onclick="filterModelsByCategory('deepseek')" id="modelFilterBtn-deepseek" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">DeepSeek 系列</button>
           <button onclick="filterModelsByCategory('gpt6')" id="modelFilterBtn-gpt6" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">GPT-6 旗舰</button>
           <button onclick="filterModelsByCategory('openai')" id="modelFilterBtn-openai" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">GPT-4o / o 系列</button>
           <button onclick="filterModelsByCategory('claude')" id="modelFilterBtn-claude" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">Claude 3.7 / 3.5</button>
@@ -1171,6 +1172,7 @@ print(response.choices[0].message.content)</pre>
 
       const filtered = models.filter(m => {
         const id = m.id.toLowerCase();
+        if (currentCategory === 'deepseek') return id.startsWith('deepseek');
         if (currentCategory === 'gpt6') return id.startsWith('gpt-6');
         if (currentCategory === 'openai') return id.startsWith('gpt-4') || id.startsWith('o1') || id.startsWith('o3');
         if (currentCategory === 'claude') return id.startsWith('claude');
@@ -1185,8 +1187,10 @@ print(response.choices[0].message.content)</pre>
         const isReasoning = id.includes('reasoning') || id.startsWith('o1') || id.startsWith('o3') || id.includes('thinking');
         const isDraw = id.includes('dall-e') || id.includes('flux');
 
+        const isDeepSeek = id.startsWith('deepseek');
         let supplier = 'OpenAI';
-        if (isClaude) supplier = 'Anthropic';
+        if (isDeepSeek) supplier = 'DeepSeek';
+        else if (isClaude) supplier = 'Anthropic';
         else if (id.startsWith('copilot')) supplier = 'Microsoft';
 
         return `
@@ -1200,6 +1204,7 @@ print(response.choices[0].message.content)</pre>
                   <p class="text-[11px] text-slate-400 mt-0.5">${m.name || m.id}</p>
                 </div>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  supplier === 'DeepSeek' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
                   supplier === 'Anthropic' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
                   isGPT6 ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30' :
                   'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -1230,7 +1235,7 @@ print(response.choices[0].message.content)</pre>
 
     function filterModelsByCategory(category) {
       currentCategory = category;
-      ['all', 'gpt6', 'openai', 'claude', 'draw'].forEach(c => {
+      ['all', 'deepseek', 'gpt6', 'openai', 'claude', 'draw'].forEach(c => {
         const btn = document.getElementById(`modelFilterBtn-${c}`);
         if (btn) {
           if (c === category) {

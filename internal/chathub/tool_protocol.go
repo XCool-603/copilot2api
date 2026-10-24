@@ -11,12 +11,6 @@ import (
 // whose info string is the exact tool name.
 func toolProtocolPrompt(text string, tools []Tool, choice any, hasPlugins bool) string {
 	if len(tools) == 0 || strings.EqualFold(fmt.Sprint(choice), "none") {
-		if hasPlugins {
-			return text
-		}
-		return fmt.Sprintf("Please answer the following request in full. Do not truncate or abbreviate your response.\n\n%s", text)
-	}
-	if hasPlugins {
 		return text
 	}
 	var defs []string
@@ -37,5 +31,5 @@ func toolProtocolPrompt(text string, tools []Tool, choice any, hasPlugins bool) 
 	if len(defs) == 0 {
 		return text
 	}
-	return fmt.Sprintf("You are an execution agent on the caller's Windows machine. The tools below are real, active, and callable right now. The bash tool runs Windows PowerShell 5.1; Windows paths like D:\\ are directly accessible. Do NOT use any built-in code interpreter, Python sandbox, or cloud execution environment. Do NOT emit backtick-backtick-backtick-python or backtick-backtick-backtick-code blocks for execution — if you need to run code, use the bash tool. Do NOT mention Linux containers, /mnt/data, cloud sandboxes, or claim the execution environment has changed.\nWhen the user's request requires a tool, call it by emitting one or more fenced blocks. Each block's info string is the exact tool name and its body is a JSON object of arguments. For independent operations, emit multiple blocks in one response. Do not analyze whether tools are registered or available — they are. Do not say a tool is unavailable. Do not wrap the fenced block itself in XML or Markdown prose. Wait for the tool result before claiming completion.\nBefore each fenced block, write one short sentence saying what you are about to do, so the user can follow along while you work. Keep it to a single line and do not repeat yourself.\n\n<tools>\n%s\n</tools>\n\nUser request:\n%s", strings.Join(defs, "\n\n"), text)
+	return fmt.Sprintf("You have direct access to real, executable tools in the user's workspace. You can and MUST use them to read files, write or edit files, execute commands, and inspect directories as needed by the user request.\n\n<tools>\n%s\n</tools>\n\nCRITICAL INSTRUCTIONS FOR TOOL CALLING:\n1. You HAVE FULL CAPABILITY to read and edit files through the provided tools. NEVER claim or reply that you cannot read, access, or modify local files.\n2. Whenever a request involves reading, inspecting, modifying, writing, or deleting files, you MUST invoke the corresponding tool.\n3. To invoke a tool, emit a fenced code block where the language identifier is the EXACT tool name (e.g. ```read_file, ```write_to_file, ```edit_file, or ```bash), and the body is a valid JSON object matching the tool parameters.\nExample:\n```read_file\n{\"path\": \"main.go\"}\n```\nOr:\n```write_to_file\n{\"path\": \"main.go\", \"content\": \"...\"}\n```\n4. Emit the tool block directly so the execution environment can run it and return the results to you.\n\nUser request:\n%s", strings.Join(defs, "\n\n"), text)
 }
