@@ -178,6 +178,14 @@
           </svg>
         </button>
 
+        <!-- Sync Upstream Models Button -->
+        <button onclick="syncUpstreamModels(this)" title="实时同步微软上游模型矩阵" class="px-2.5 py-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/30 border border-indigo-500/20 rounded-xl transition duration-200 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span class="hidden sm:inline font-mono">实时同步模型</span>
+        </button>
+
         <!-- Refresh Button -->
         <button onclick="refreshData()" title="刷新数据" class="p-2 text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition duration-200">
           <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -477,9 +485,16 @@ print(response.choices[0].message.content)</pre>
           <button onclick="filterModelsByCategory('draw')" id="modelFilterBtn-draw" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition">绘图创作</button>
         </div>
 
-        <div class="text-xs text-slate-400">
-          <span>上游直通：</span>
-          <span class="text-emerald-400 font-mono font-semibold">M365 Copilot Native ChatHub</span>
+        <div class="flex items-center gap-3 text-xs">
+          <button onclick="syncUpstreamModels(this)" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>实时同步上游模型</span>
+          </button>
+          <span class="text-slate-600">|</span>
+          <div class="text-slate-400">
+            <span>上游直通：</span>
+            <span class="text-emerald-400 font-mono font-semibold">M365 Copilot Native ChatHub</span>
+          </div>
         </div>
       </div>
 
@@ -1151,6 +1166,8 @@ print(response.choices[0].message.content)</pre>
       const grid = document.getElementById('modelsGrid');
       if (!grid || !dashboardData) return;
       const models = dashboardData.models || [];
+      const allBtn = document.getElementById('modelFilterBtn-all');
+      if (allBtn) allBtn.innerText = `全部模型 (${models.length})`;
 
       const filtered = models.filter(m => {
         const id = m.id.toLowerCase();
@@ -1226,11 +1243,35 @@ print(response.choices[0].message.content)</pre>
       renderModels();
     }
 
+    // Sync Upstream Models
+    async function syncUpstreamModels(btn) {
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>正在同步中...</span>`;
+      }
+      try {
+        const res = await fetch('/api/admin/models/sync', { credentials: 'include', method: 'POST' });
+        const result = await res.json();
+        await refreshData();
+        const cnt = (dashboardData && dashboardData.models) ? dashboardData.models.length : 32;
+        showToast(`已成功同步最新模型矩阵！当前共就绪 ${cnt} 个模型（含 GPT-6.1 / GPT-6.0 旗舰及推理系列）`, 'success');
+      } catch (err) {
+        showToast(`同步模型失败: ${err.message}`, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
     // Test Model
     async function testModel(modelId) {
       showToast(`正在发送测试请求到 ${modelId}...`, 'info');
       try {
         const res = await fetch('/api/admin/models/test', {
+          credentials: 'include',
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: modelId, prompt: 'ping' })
@@ -1307,6 +1348,7 @@ print(response.choices[0].message.content)</pre>
 
       try {
         const res = await fetch('/v1/chat/completions', {
+          credentials: 'include',
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
