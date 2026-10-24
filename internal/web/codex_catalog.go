@@ -61,6 +61,14 @@ func codexModelMessages() map[string]any {
 }
 
 var gatewayModels = []modelSpec{
+	// GPT-6 Series Models
+	{ID: "gpt-6.1", Owner: "openai-via-m365", DisplayName: "GPT-6.1", Tools: true},
+	{ID: "gpt-6.1-reasoning", Owner: "openai-via-m365", DisplayName: "GPT-6.1 Reasoning", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "gpt-6.0", Owner: "openai-via-m365", DisplayName: "GPT-6.0", Tools: true},
+	{ID: "gpt-6.0-reasoning", Owner: "openai-via-m365", DisplayName: "GPT-6.0 Reasoning", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "gpt-6", Owner: "openai-via-m365", DisplayName: "GPT-6", Tools: true},
+	{ID: "gpt-6-reasoning", Owner: "openai-via-m365", DisplayName: "GPT-6 Reasoning", Tools: true, DefaultReasoningLevel: "high"},
+	{ID: "gpt-6-astra", Owner: "openai-via-m365", DisplayName: "GPT-6 Astra", Tools: true},
 	// Standard Industry Models
 	{ID: "gpt-4o", Owner: "openai-via-m365", DisplayName: "GPT-4o (Omni)", Tools: true},
 	{ID: "gpt-4o-mini", Owner: "openai-via-m365", DisplayName: "GPT-4o Mini", Tools: true},
@@ -141,7 +149,10 @@ func validUpstreamTone(tone string) bool {
 
 func knownUpstreamTones() []string {
 	return []string{
-		"Magic", "Gpt_5_2_Auto", "Gpt_5_2_Chat", "Gpt_5_2_Reasoning",
+		"Magic",
+		"Gpt_6_1_Chat", "Gpt_6_1_Reasoning",
+		"Gpt_6_0_Chat", "Gpt_6_0_Reasoning",
+		"Gpt_5_2_Auto", "Gpt_5_2_Chat", "Gpt_5_2_Reasoning",
 		"Gpt_5_3_Chat", "Gpt_5_3_Reasoning",
 		"Gpt_5_4_Chat", "Gpt_5_4_Reasoning",
 		"Gpt_5_5_Chat", "Gpt_5_5_Reasoning",
@@ -331,6 +342,10 @@ func reasoningTone(model, effort string) (string, error) {
 		return base, nil
 	}
 	switch strings.ToLower(strings.TrimSpace(model)) {
+	case "gpt-6.1", "gpt-6.1-reasoning":
+		return "Gpt_6_1_Reasoning", nil
+	case "gpt-6.0", "gpt-6.0-reasoning", "gpt-6", "gpt-6-reasoning", "gpt-6-astra":
+		return "Gpt_6_0_Reasoning", nil
 	case "claude", "claude-sonnet":
 		return "Claude_Sonnet_Reasoning", nil
 	case "gpt-5.2":
