@@ -85,7 +85,7 @@ func buildAgentLedger(messages []oaiMsg) agentLedger {
 		}
 		if m.Role == "tool" {
 			if e, ok := calls[m.ToolCallID]; ok {
-				e.Result = compactToolResult(contentToString(m.Content), 4000)
+				e.Result = compactToolResult(contentToString(m.Content), 150000)
 				e.Failed = !strings.HasPrefix(e.Result, "Success. Updated the following files:") && failureSignal.MatchString(e.Result)
 				calls[m.ToolCallID] = e
 			}

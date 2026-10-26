@@ -2516,7 +2516,7 @@ func (s *Server) openaiChat(w http.ResponseWriter, r *http.Request) {
 		calls = filterCompletedCalls(calls, ledger)
 		calls, _ = validateCalls("router", calls)
 		if !parsed {
-			repairRes, repairErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: `Repair this tool routing output into JSON only with shape {"calls":[{"name":"function_name","arguments":{}}]}. Use {"calls":[]} if no tool is needed. OUTPUT:\n` + compactToolResult(routeRes.Text, 6000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
+			repairRes, repairErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: `Repair this tool routing output into JSON only with shape {"calls":[{"name":"function_name","arguments":{}}]}. Use {"calls":[]} if no tool is needed. OUTPUT:\n` + compactToolResult(routeRes.Text, 150000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
 			if repairErr == nil && repairRes.ConversationID != "" {
 				s.dropTransientConversation(repairRes.ConversationID)
 			}
@@ -2974,7 +2974,7 @@ func (s *Server) openaiChat(w http.ResponseWriter, r *http.Request) {
 		calls, parsed := parseModelToolDecision(routeRes.Text, toolMaps, body.ToolChoice)
 		if !parsed {
 			repairRes, repairErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: `Repair this tool routing output into JSON only with shape {"calls":[{"name":"function_name","arguments":{}}]}. Do not invent calls; use {"calls":[]} if unrecoverable. OUTPUT:
-` + compactToolResult(routeRes.Text, 6000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
+` + compactToolResult(routeRes.Text, 150000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
 			if repairErr == nil {
 				calls, parsed = parseModelToolDecision(repairRes.Text, toolMaps, body.ToolChoice)
 			}
@@ -3436,7 +3436,7 @@ APPLICATION_REQUEST_AND_EVIDENCE:
 		if routeErr == nil {
 			calls, parsed := parseModelToolDecision(routeRes.Text, toolMaps, body.ToolChoice)
 			if !parsed {
-				repairRes, repairErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: `Repair this tool routing output into JSON only with shape {"calls":[{"name":"function_name","arguments":{}}]}. Use {"calls":[]} if no tool is needed. OUTPUT:\n` + compactToolResult(routeRes.Text, 6000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
+				repairRes, repairErr := s.chatWithAccount(ctx, acc.ID, account, chathub.Request{Text: `Repair this tool routing output into JSON only with shape {"calls":[{"name":"function_name","arguments":{}}]}. Use {"calls":[]} if no tool is needed. OUTPUT:\n` + compactToolResult(routeRes.Text, 150000), Tone: tone, Attachments: body.Attachments, LicenseType: toolCfg.LicenseType, Scenario: toolCfg.Scenario})
 				if repairErr == nil {
 					calls, parsed = parseModelToolDecision(repairRes.Text, toolMaps, body.ToolChoice)
 				}

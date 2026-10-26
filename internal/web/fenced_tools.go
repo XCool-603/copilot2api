@@ -29,7 +29,14 @@ func fencedToolCalls(text string, tools []map[string]any, choice any) []detected
 		name := m[1]
 		args := strings.TrimSpace(m[2])
 		var v any
-		_ = json.Unmarshal([]byte(args), &v)
+		if err := lenientUnmarshal([]byte(args), &v); err != nil {
+			pos := strings.Index(text, args)
+			if pos >= 0 {
+				if fullObj, ok := extractJSONObject(text[pos:]); ok {
+					_ = lenientUnmarshal([]byte(fullObj), &v)
+				}
+			}
+		}
 		// Auto-convert bash/shell code blocks to tool calls, but only when
 		// the client declared the tool.
 		if name == "bash" || name == "sh" || name == "shell" || name == "powershell" || name == "cmd" {
@@ -68,7 +75,12 @@ func fencedToolCalls(text string, tools []map[string]any, choice any) []detected
 					var argBytes []byte
 					if argsVal, hasArgs := m["arguments"]; hasArgs {
 						if argStr, isStr := argsVal.(string); isStr {
-							argBytes = []byte(argStr)
+							var parsedArgs any
+							if lenientUnmarshal([]byte(argStr), &parsedArgs) == nil {
+								argBytes, _ = json.Marshal(parsedArgs)
+							} else {
+								argBytes = []byte(argStr)
+							}
 						} else {
 							argBytes, _ = json.Marshal(argsVal)
 						}
@@ -90,7 +102,12 @@ func fencedToolCalls(text string, tools []map[string]any, choice any) []detected
 							var argBytes []byte
 							if argsVal, hasArgs := m["arguments"]; hasArgs {
 								if argStr, isStr := argsVal.(string); isStr {
-									argBytes = []byte(argStr)
+									var parsedArgs any
+							if lenientUnmarshal([]byte(argStr), &parsedArgs) == nil {
+								argBytes, _ = json.Marshal(parsedArgs)
+							} else {
+								argBytes = []byte(argStr)
+							}
 								} else {
 									argBytes, _ = json.Marshal(argsVal)
 								}
@@ -135,7 +152,7 @@ func fencedToolCalls(text string, tools []map[string]any, choice any) []detected
 				continue
 			}
 			var obj map[string]any
-			if json.Unmarshal([]byte(line[:braceEnd+1]), &obj) != nil {
+			if lenientUnmarshal([]byte(line[:braceEnd+1]), &obj) != nil {
 				continue
 			}
 			if cmd, hasCmd := obj["command"]; hasCmd && cmd != "" {
