@@ -218,12 +218,12 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
         <div>
-          <div class="text-sm font-semibold text-amber-300">安全风险警示：当前控制台尚未配置管理访问密码</div>
-          <div class="text-xs text-amber-200/80 mt-0.5">任何可访问此服务端口的人员均可查看账号凭证与操作控制台。强烈建议立即配置管理密码，以激活全局鉴权与安全防护！</div>
+          <div id="warnTitle" class="text-sm font-semibold text-amber-300">安全风险警示：当前控制台尚未配置管理访问密码</div>
+          <div id="warnDesc" class="text-xs text-amber-200/80 mt-0.5">任何可访问此服务端口的人员均可查看账号凭证与操作控制台。强烈建议立即配置管理密码，以激活全局鉴权与安全防护！</div>
         </div>
       </div>
       <button onclick="openChangePasswordModal()" class="px-3.5 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl transition shrink-0 shadow-sm self-start sm:self-auto">
-        立即配置密码
+        立即配置/修改密码
       </button>
     </div>
 
@@ -964,6 +964,12 @@ print(response.choices[0].message.content)</pre>
       if (banner) {
         if (!data.hasPassword) {
           banner.classList.remove('hidden');
+          const wt = document.getElementById('warnTitle'); if (wt) wt.innerText = '安全风险警示：当前控制台尚未配置管理访问密码';
+          const wd = document.getElementById('warnDesc'); if (wd) wd.innerText = '强烈建议立即配置管理密码，以激活全局鉴权与安全防护！';
+        } else if (data.mustChangePw) {
+          banner.classList.remove('hidden');
+          const wt = document.getElementById('warnTitle'); if (wt) wt.innerText = '安全保护模式生效中：必须先修改初始默认密码（admin123）';
+          const wd = document.getElementById('warnDesc'); if (wd) wd.innerText = '当前正处于默认初始密码保护状态，系统已锁定 API Key 增删与账号修改等写操作。请先前往【设置】修改密码，修改后立即解锁全部功能！';
         } else {
           banner.classList.add('hidden');
         }
@@ -1709,7 +1715,12 @@ print(response.choices[0].message.content)</pre>
           document.getElementById('keyCreatedModal').classList.remove('hidden');
           refreshData();
         } else {
-          showToast(`生成 Key 失败: ${data.error?.message || '未知错误'}`, 'error');
+          const errMsg = data.error?.message || '未知错误';
+          showToast(`生成 Key 失败: ${errMsg}`, 'error');
+          if (data.error?.code === 'password_change_required' || errMsg.includes('password must be changed')) {
+            showToast('安全提示：必须先在【设置】中修改初始密码 admin123 后方可操作 API Key', 'warning');
+            openChangePasswordModal();
+          }
         }
       } catch (e) {
         showToast(`请求异常: ${e}`, 'error');
@@ -1718,11 +1729,21 @@ print(response.choices[0].message.content)</pre>
 
     async function toggleKeyStatus(id, revoked) {
       try {
-        await fetch('/api/admin/keys', {
+        const res = await fetch('/api/admin/keys', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, revoked })
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error?.message || `HTTP ${res.status}`;
+          showToast(`更新失败: ${errMsg}`, 'error');
+          if (errData.error?.code === 'password_change_required' || errMsg.includes('password must be changed')) {
+            showToast('请先在【设置】中修改初始密码 admin123', 'warning');
+            openChangePasswordModal();
+          }
+          return;
+        }
         showToast('Key 状态已更新', 'success');
         refreshData();
       } catch (e) {
@@ -1733,7 +1754,17 @@ print(response.choices[0].message.content)</pre>
     async function deleteKey(id) {
       if (!confirm('确定彻底删除该 API Key 吗？关联客户端将无法继续访问！')) return;
       try {
-        await fetch(`/api/admin/keys?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const res = await fetch(`/api/admin/keys?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error?.message || errData.message || `HTTP ${res.status}`;
+          showToast(`删除失败: ${errMsg}`, 'error');
+          if (errData.error?.code === 'password_change_required' || errMsg.includes('password must be changed')) {
+            showToast('请先在【设置】中修改初始密码 admin123 后方可删除 Key', 'warning');
+            openChangePasswordModal();
+          }
+          return;
+        }
         showToast('API Key 已删除', 'success');
         refreshData();
       } catch (e) {
