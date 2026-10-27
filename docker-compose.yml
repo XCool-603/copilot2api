@@ -4,6 +4,7 @@ services:
     image: copilot2api:latest
     container_name: copilot2api
     restart: unless-stopped
+    user: root
     ports:
       - "0.0.0.0:4141:4141"
     environment:

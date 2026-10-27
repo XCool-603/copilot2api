@@ -620,7 +620,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 		s.mu.Lock()
 		mustChange := s.mustChangePassword
 		s.mu.Unlock()
-		if mustChange && r.URL.Path != "/api/admin/change-password" && r.URL.Path != "/api/admin/logout" {
+		if mustChange && strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" && r.URL.Path != "/api/admin/change-password" && r.URL.Path != "/api/admin/logout" {
 			writeOpenAIError(w, http.StatusForbidden, "password_change_required", "administrator password must be changed before using the console")
 			return
 		}
