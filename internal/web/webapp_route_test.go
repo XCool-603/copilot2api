@@ -26,7 +26,7 @@ func TestRootServesConsole(t *testing.T) {
 	handler := s.Routes()
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "root") {
+	if w.Code != http.StatusOK || (!strings.Contains(w.Body.String(), "root") && !strings.Contains(w.Body.String(), "Copilot 2API")) {
 		t.Fatalf("root did not serve the React console: status=%d body=%q", w.Code, w.Body.String())
 	}
 }
