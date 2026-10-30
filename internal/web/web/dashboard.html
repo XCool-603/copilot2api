@@ -803,6 +803,10 @@ print(response.choices[0].message.content)</pre>
         <label class="text-xs text-slate-400">Key 名称 / 用途备注</label>
         <input id="inputKeyName" type="text" placeholder="例如：开发环境、NextChat 或 沉浸式翻译" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
       </div>
+      <div>
+        <label class="text-xs text-slate-400">自定义密钥（可选，留空则自动生成随机 m365_ 密钥）</label>
+        <input id="inputKeyCustom" type="text" placeholder="例如：sk-my-custom-key 或原使用密钥（留空自动生成）" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+      </div>
       <button onclick="submitCreateKey()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
         立即生成密钥
       </button>
@@ -1154,7 +1158,7 @@ print(response.choices[0].message.content)</pre>
                 : '<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">生效中</span>'
               }
             </td>
-            <td class="py-3 px-3 text-slate-400 font-sans text-[11px]">${k.created_at ? new Date(k.created_at).toLocaleString() : '-'}</td>
+            <td class="py-3 px-3 text-slate-400 font-sans text-[11px]">${(k.createdAt || k.created_at) ? new Date(k.createdAt || k.created_at).toLocaleString() : '-'}</td>
             <td class="py-3 px-3 text-right">
               <button onclick="toggleKeyStatus('${k.id}', ${!isRevoked})" class="text-xs text-slate-400 hover:text-white mr-3 transition font-sans">
                 ${isRevoked ? '重新启用' : '撤销'}
@@ -1692,6 +1696,8 @@ print(response.choices[0].message.content)</pre>
     // Key Modals
     function openCreateKeyModal() {
       document.getElementById('inputKeyName').value = '';
+      const customInput = document.getElementById('inputKeyCustom');
+      if (customInput) customInput.value = '';
       document.getElementById('createKeyModal').classList.remove('hidden');
     }
     function closeCreateKeyModal() {
@@ -1702,12 +1708,19 @@ print(response.choices[0].message.content)</pre>
     }
     async function submitCreateKey() {
       const name = document.getElementById('inputKeyName').value.trim() || 'API Key';
+      const customKeyEl = document.getElementById('inputKeyCustom');
+      const key = customKeyEl ? customKeyEl.value.trim() : '';
       try {
         const res = await fetch('/api/admin/keys', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, key })
         });
+        if (res.status === 401) {
+          showToast('管理员登录会话已失效，请重新登录', 'warning');
+          document.getElementById('loginOverlay').classList.remove('hidden');
+          return;
+        }
         const data = await res.json();
         if (res.ok) {
           closeCreateKeyModal();
@@ -1734,6 +1747,11 @@ print(response.choices[0].message.content)</pre>
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, revoked })
         });
+        if (res.status === 401) {
+          showToast('管理员登录会话已失效，请重新登录', 'warning');
+          document.getElementById('loginOverlay').classList.remove('hidden');
+          return;
+        }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${res.status}`;
@@ -1755,6 +1773,11 @@ print(response.choices[0].message.content)</pre>
       if (!confirm('确定彻底删除该 API Key 吗？关联客户端将无法继续访问！')) return;
       try {
         const res = await fetch(`/api/admin/keys?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (res.status === 401) {
+          showToast('管理员登录会话已失效，请重新登录', 'warning');
+          document.getElementById('loginOverlay').classList.remove('hidden');
+          return;
+        }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error?.message || errData.message || `HTTP ${res.status}`;

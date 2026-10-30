@@ -645,18 +645,35 @@ func secureAdminCookie(r *http.Request) bool {
 }
 
 func (s *Server) validAdminSession(r *http.Request) bool {
-	c, err := r.Cookie("m365_admin_session")
-	if err != nil || c.Value == "" {
+	if r == nil {
 		return false
 	}
+	if c, err := r.Cookie("m365_admin_session"); err == nil && c.Value != "" {
+		s.mu.Lock()
+		expires, ok := s.adminSessions[c.Value]
+		if ok && time.Now().Before(expires) {
+			s.mu.Unlock()
+			return true
+		}
+		if ok {
+			delete(s.adminSessions, c.Value)
+		}
+		s.mu.Unlock()
+	}
+
+	// Also accept direct admin password in headers
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	expires, ok := s.adminSessions[c.Value]
-	if !ok || time.Now().After(expires) {
-		delete(s.adminSessions, c.Value)
-		return false
+	adminHash := s.adminPassword
+	s.mu.Unlock()
+	if adminHash != "" {
+		if pw := strings.TrimSpace(r.Header.Get("X-Admin-Password")); pw != "" && checkPassword(adminHash, pw) {
+			return true
+		}
+		if raw := rawAPIKey(r); raw != "" && checkPassword(adminHash, raw) {
+			return true
+		}
 	}
-	return true
+	return false
 }
 
 const maxAdminSessions = 4096
@@ -747,6 +764,7 @@ func (s *Server) adminKeys(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var b struct {
 			Name string `json:"name"`
+			Key  string `json:"key"`
 		}
 		if json.NewDecoder(r.Body).Decode(&b) != nil {
 			writeOpenAIError(w, 400, "invalid_request_error", "bad json")
@@ -755,7 +773,7 @@ func (s *Server) adminKeys(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimSpace(b.Name) == "" {
 			b.Name = "API key"
 		}
-		rec, raw, e := s.apiKeys.create(b.Name)
+		rec, raw, e := s.apiKeys.createWithKey(b.Name, b.Key)
 		if e != nil {
 			writeOpenAIError(w, 500, "internal_error", e.Error())
 			return
@@ -815,7 +833,28 @@ func rawAPIKey(r *http.Request) string {
 
 func (s *Server) validAPIKey(r *http.Request) bool {
 	raw := rawAPIKey(r)
-	return raw != "" && s.apiKeys.valid(raw)
+	if raw == "" {
+		return false
+	}
+	if s.apiKeys != nil && s.apiKeys.valid(raw) {
+		return true
+	}
+	s.mu.Lock()
+	adminHash := s.adminPassword
+	s.mu.Unlock()
+	if adminHash != "" && checkPassword(adminHash, raw) {
+		return true
+	}
+	for _, envKey := range []string{"M365_API_KEY", "API_KEY"} {
+		if envVal := strings.TrimSpace(os.Getenv(envKey)); envVal != "" {
+			for _, part := range strings.Split(envVal, ",") {
+				if strings.TrimSpace(part) == raw {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func jsonOut(w http.ResponseWriter, v any) {

@@ -62,7 +62,12 @@ func writeFileAtomic(path string, b []byte, perm os.FileMode) error {
 		return err
 	}
 	if err := os.Rename(tmpName, path); err != nil {
-		return err
+		if fi, statErr := os.Stat(path); statErr == nil && fi.IsDir() {
+			return err
+		}
+		if writeErr := os.WriteFile(path, b, perm); writeErr != nil {
+			return err
+		}
 	}
 	_ = fsyncDir(dir)
 	return nil

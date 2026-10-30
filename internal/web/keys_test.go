@@ -70,3 +70,49 @@ func TestAPIKeyDeleteRollsBackWhenPersistenceFails(t *testing.T) {
 		t.Fatalf("key not restored after failed delete: %+v", store.Keys)
 	}
 }
+
+func TestAPIKeyCreateWithCustomKeyAndValidate(t *testing.T) {
+	tmpFile := t.TempDir() + "/api-keys.json"
+	store := newAPIKeyStore(tmpFile)
+	rec, raw, err := store.createWithKey("custom", "sk-custom-secret-key-12345")
+	if err != nil {
+		t.Fatalf("createWithKey error: %v", err)
+	}
+	if raw != "sk-custom-secret-key-12345" {
+		t.Fatalf("expected raw key sk-custom-secret-key-12345, got %s", raw)
+	}
+	if !store.valid("sk-custom-secret-key-12345") {
+		t.Fatal("expected custom key to be valid")
+	}
+	// Prefix match
+	if !store.valid(rec.Prefix) {
+		t.Fatal("expected prefix to be valid")
+	}
+	// ID match
+	if !store.valid(rec.ID) {
+		t.Fatal("expected ID to be valid")
+	}
+}
+
+func TestParseAPIKeysJSONCompatibility(t *testing.T) {
+	// 1. Array of objects with "key"
+	jsonArr := []byte(`[{"id":"k1","name":"legacy","key":"sk-legacy-123"}]`)
+	records := parseAPIKeysJSON(jsonArr)
+	if len(records) != 1 || records[0].Key != "sk-legacy-123" {
+		t.Fatalf("failed to parse array of records: %+v", records)
+	}
+
+	// 2. Array of string keys
+	jsonStrs := []byte(`["sk-plain-1", "sk-plain-2"]`)
+	records2 := parseAPIKeysJSON(jsonStrs)
+	if len(records2) != 2 {
+		t.Fatalf("failed to parse array of strings: %+v", records2)
+	}
+
+	// 3. Object with "api_keys"
+	jsonObj := []byte(`{"api_keys":[{"id":"k3","name":"obj","hash":"12345678"}]}`)
+	records3 := parseAPIKeysJSON(jsonObj)
+	if len(records3) != 1 || records3[0].ID != "k3" {
+		t.Fatalf("failed to parse api_keys object: %+v", records3)
+	}
+}
