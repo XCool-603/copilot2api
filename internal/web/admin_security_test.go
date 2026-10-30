@@ -159,6 +159,7 @@ func TestLoadAdminPasswordBootstrapsDefault(t *testing.T) {
 }
 
 func TestValidNewAdminPasswordStrength(t *testing.T) {
+	t.Setenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD", "1")
 	if err := validNewAdminPassword("short1!A", nil); err == nil {
 		t.Fatal("expected short password to fail")
 	}
@@ -175,6 +176,14 @@ func TestValidNewAdminPasswordStrength(t *testing.T) {
 	h, _ := hashPassword(historyPw)
 	if err := validNewAdminPassword(historyPw, []string{h}); err == nil {
 		t.Fatal("expected history reuse to fail")
+	}
+
+	t.Setenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD", "")
+	if err := validNewAdminPassword("12345", nil); err == nil {
+		t.Fatal("expected < 6 chars to fail")
+	}
+	if err := validNewAdminPassword("123456", nil); err != nil {
+		t.Fatalf("expected 6 chars to pass, got %v", err)
 	}
 }
 

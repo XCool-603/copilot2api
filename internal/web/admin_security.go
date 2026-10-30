@@ -323,65 +323,68 @@ func clientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 func validNewAdminPassword(p string, history []string) error {
+	p = strings.TrimSpace(p)
 	if p == defaultAdminPassword {
-		return errors.New("new password must not be the default password")
+		return errors.New("新密码不能与初始默认密码 (admin123) 相同")
 	}
-	if len(p) < 12 {
-		return errors.New("new password must be at least 12 characters")
+	if len(p) < 6 {
+		return errors.New("新密码长度至少需要 6 个字符")
 	}
 	if len(p) > 72 {
-		return errors.New("new password is too long (max 72 characters due to bcrypt limit)")
+		return errors.New("新密码长度不能超过 72 个字符 (bcrypt限制)")
 	}
-	if len(p) > 256 {
-		return errors.New("new password is too long")
-	}
-	classes := 0
-	hasLower, hasUpper, hasDigit, hasSpecial := false, false, false, false
-	for _, r := range p {
-		switch {
-		case r >= 'a' && r <= 'z':
-			hasLower = true
-		case r >= 'A' && r <= 'Z':
-			hasUpper = true
-		case r >= '0' && r <= '9':
-			hasDigit = true
-		default:
-			hasSpecial = true
-		}
-	}
-	if hasLower {
-		classes++
-	}
-	if hasUpper {
-		classes++
-	}
-	if hasDigit {
-		classes++
-	}
-	if hasSpecial {
-		classes++
-	}
-	if classes < 3 {
-		return errors.New("new password must contain at least 3 of 4 character classes (lower, upper, digit, special)")
-	}
-	lower := strings.ToLower(p)
-	for _, bad := range commonPasswordBlacklist {
-		if lower == bad || strings.Contains(lower, bad) {
-			return errors.New("new password is too common or contains a blacklisted word")
-		}
-	}
-	if isCommonSequence(p) {
-		return errors.New("new password contains a common sequence or repeated characters")
-	}
-	if score := zxcvbnScore(p); score < 3 {
-		return errors.New("new password is too weak (zxcvbn score < 3), choose a stronger password")
-	}
+
 	for _, h := range history {
-		if h == "" {
-			continue
+		if h != "" && checkPassword(h, p) {
+			return errors.New("新密码与近期使用过的密码重复，请更换新密码")
 		}
-		if checkPassword(h, p) {
-			return errors.New("new password was used recently, choose a different one")
+	}
+
+	// Only enforce strict complexity rules if M365_REQUIRE_STRONG_ADMIN_PASSWORD=1 is set
+	if strings.TrimSpace(os.Getenv("M365_REQUIRE_STRONG_ADMIN_PASSWORD")) == "1" {
+		if len(p) < 12 {
+			return errors.New("高安全模式要求密码长度至少 12 个字符")
+		}
+		classes := 0
+		hasLower, hasUpper, hasDigit, hasSpecial := false, false, false, false
+		for _, r := range p {
+			switch {
+			case r >= 'a' && r <= 'z':
+				hasLower = true
+			case r >= 'A' && r <= 'Z':
+				hasUpper = true
+			case r >= '0' && r <= '9':
+				hasDigit = true
+			default:
+				hasSpecial = true
+			}
+		}
+		if hasLower {
+			classes++
+		}
+		if hasUpper {
+			classes++
+		}
+		if hasDigit {
+			classes++
+		}
+		if hasSpecial {
+			classes++
+		}
+		if classes < 3 {
+			return errors.New("高安全模式要求包含大小写字母、数字和符号中的至少 3 种")
+		}
+		lower := strings.ToLower(p)
+		for _, bad := range commonPasswordBlacklist {
+			if lower == bad || strings.Contains(lower, bad) {
+				return errors.New("高安全模式下密码不能包含常用弱口令词汇")
+			}
+		}
+		if isCommonSequence(p) {
+			return errors.New("高安全模式下密码不能包含常见连续或重复字符")
+		}
+		if score := zxcvbnScore(p); score < 3 {
+			return errors.New("高安全模式下密码强度评分不足 (zxcvbn score < 3)")
 		}
 	}
 	return nil
@@ -553,9 +556,14 @@ func (s *Server) adminChangePassword(w http.ResponseWriter, r *http.Request) {
 	currentHash := s.adminPassword
 	history := append([]string{}, s.adminPasswordHistory...)
 	s.mu.Unlock()
-	if !checkPassword(currentHash, b.Current) {
+
+	cur := strings.TrimSpace(b.Current)
+	if cur == "" && (checkPassword(currentHash, defaultAdminPassword) || currentHash == "") {
+		cur = defaultAdminPassword
+	}
+	if !checkPassword(currentHash, cur) {
 		auditLog(r, "admin_password_change_failed", "current password invalid")
-		writeOpenAIError(w, 401, "auth_error", "current password is invalid")
+		writeOpenAIError(w, 401, "auth_error", "原管理密码不正确（若此前未修改过，初始默认密码为 admin123）")
 		return
 	}
 	allHistory := append([]string{currentHash}, history...)

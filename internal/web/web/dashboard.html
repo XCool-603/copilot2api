@@ -645,16 +645,16 @@ print(response.choices[0].message.content)</pre>
           
           <form onsubmit="doChangePassword(event)" class="space-y-3">
             <div>
-              <label class="text-xs text-slate-400">原管理密码 (首次配置留空)</label>
-              <input id="inputOldPassword" type="password" placeholder="原密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <label class="text-xs text-slate-400">原管理密码 (初始默认密码为 admin123，未修改过可留空)</label>
+              <input id="inputOldPassword" type="password" placeholder="未修改过可留空，自动使用 admin123" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
-              <label class="text-xs text-slate-400">新管理密码 (建议至少8位，包含字母与数字)</label>
-              <input id="inputNewPassword" type="password" required placeholder="新密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <label class="text-xs text-slate-400">新管理密码 (至少 6 位)</label>
+              <input id="inputNewPassword" type="password" required placeholder="请输入新密码（至少 6 位）" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="text-xs text-slate-400">确认新密码</label>
-              <input id="inputConfirmPassword" type="password" required placeholder="确认新密码" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input id="inputConfirmPassword" type="password" required placeholder="再次输入新密码确认" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition mt-2">
               保存并更新密码
@@ -1802,10 +1802,22 @@ print(response.choices[0].message.content)</pre>
     }
     async function doChangePassword(e) {
       e.preventDefault();
-      const current_password = document.getElementById('inputOldPassword').value;
-      const new_password = document.getElementById('inputNewPassword').value;
-      const confirm = document.getElementById('inputConfirmPassword').value;
+      const current_password = document.getElementById('inputOldPassword').value.trim() || 'admin123';
+      const new_password = document.getElementById('inputNewPassword').value.trim();
+      const confirm = document.getElementById('inputConfirmPassword').value.trim();
 
+      if (!new_password) {
+        showToast('请输入新密码', 'error');
+        return;
+      }
+      if (new_password.length < 6) {
+        showToast('新密码长度至少需要 6 个字符', 'error');
+        return;
+      }
+      if (new_password === 'admin123') {
+        showToast('新密码不能与初始默认密码 admin123 相同', 'error');
+        return;
+      }
       if (new_password !== confirm) {
         showToast('两次输入的新密码不一致', 'error');
         return;
@@ -1822,7 +1834,7 @@ print(response.choices[0].message.content)</pre>
           showToast('管理密码修改成功！请重新登录', 'success');
           setTimeout(() => location.reload(), 1500);
         } else {
-          showToast(`修改失败: ${data.error?.message || data.error || '密码不符合复杂度要求'}`, 'error');
+          showToast(`修改失败: ${data.error?.message || data.error || '密码不符合要求'}`, 'error');
         }
       } catch (err) {
         showToast(`请求失败: ${err}`, 'error');
